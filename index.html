@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>عبده.io - لعبة البقاء والنمو</title>
+  <title>عبده.io - لعبة الثعبان والبقاء</title>
   <style>
     * {
       box-sizing: border-box;
@@ -20,7 +20,7 @@
     }
     canvas {
       display: block;
-      background: #1e293b;
+      background: #090d16;
       cursor: crosshair;
     }
     #ui {
@@ -88,18 +88,18 @@
 <body>
 
   <div id="ui">
-    <div>حجم عبده: <span id="score">10</span></div>
+    <div>طول عبده: <span id="score">10</span></div>
   </div>
 
   <div id="startScreen" class="overlay">
-    <h1>عبده.io 🚀</h1>
-    <p>حرك عبده بالموس أو باللمس لتلتهم الطعام وتكبر، وتجنب الأعداء الأكبر منك!</p>
+    <h1>عبده.io 🐍</h1>
+    <p>حرك ثعبانك بالموس أو اللمس لتأكل الأشكال الملونة وتكبر! احذر من لمس الحدود الحمراء أو الأعداء الأكبر منك!</p>
     <button class="btn" onclick="startGame()">ابدأ اللعب الآن</button>
   </div>
 
   <div id="gameOverScreen" class="overlay hidden">
-    <h1 style="color: #ef4444;">تم التهام عبده! 💥</h1>
-    <p>وصل حجم عبده النهائي إلى: <span id="finalScore">0</span></p>
+    <h1 style="color: #ef4444;" id="deathReason">تم التهام عبده! 💥</h1>
+    <p>وصل طول الثعبان النهائي إلى: <span id="finalScore">0</span></p>
     <button class="btn" onclick="startGame()">العب مرة أخرى</button>
   </div>
 
@@ -117,16 +117,26 @@
     resizeCanvas();
 
     let isPlaying = false;
-    let score = 10;
-    let player = { x: 0, y: 0, radius: 15, color: '#38bdf8' };
     let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+    
+    // إعدادات اللاعب (الثعبان)
+    let snake = {
+      body: [],
+      length: 15,
+      radius: 12,
+      color: '#38bdf8'
+    };
+
     let foods = [];
     let enemies = [];
-    const FOOD_COUNT = 150;
-    const ENEMY_COUNT = 8;
-    const MAP_SIZE = 2000;
+    
+    const FOOD_COUNT = 220; // زيادة كمية الطعام وتكثيفه
+    const ENEMY_COUNT = 10;
+    const MAP_SIZE = 1400;  // تصغير الخريطة حبة لتقريب الأكل والأعداء
+    const SNAKE_SPEED = 2.2; // تقليل السرعة لتصبح أهدأ ومريحة
 
-    const colors = ['#f43f5e', '#a855f7', '#22c55e', '#eab308', '#06b6d4', '#ec4899'];
+    const colors = ['#f43f5e', '#a855f7', '#22c55e', '#eab308', '#06b6d4', '#ec4899', '#f97316'];
+    const shapes = ['circle', 'square', 'star'];
 
     window.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
@@ -141,32 +151,45 @@
     });
 
     function initGame() {
-      player.x = MAP_SIZE / 2;
-      player.y = MAP_SIZE / 2;
-      player.radius = 15;
-      score = 10;
+      const startX = MAP_SIZE / 2;
+      const startY = MAP_SIZE / 2;
+      
+      snake.body = [];
+      snake.length = 15;
+      snake.radius = 12;
 
-      foods = [];
-      for (let i = 0; i < FOOD_COUNT; i++) {
-        foods.push({
-          x: Math.random() * MAP_SIZE,
-          y: Math.random() * MAP_SIZE,
-          radius: Math.random() * 4 + 3,
-          color: colors[Math.floor(Math.random() * colors.length)]
-        });
+      for (let i = 0; i < snake.length; i++) {
+        snake.body.push({ x: startX, y: startY + i * 5 });
       }
 
+      // إنشاء طعام أكبر وفي أماكن متقاربة وأشكال متنوعة
+      foods = [];
+      for (let i = 0; i < FOOD_COUNT; i++) {
+        foods.push(generateFood());
+      }
+
+      // إنشاء أعداء بألوان مختلفة ومتنوعة
       enemies = [];
       for (let i = 0; i < ENEMY_COUNT; i++) {
         enemies.push({
-          x: Math.random() * MAP_SIZE,
-          y: Math.random() * MAP_SIZE,
-          radius: Math.random() * 20 + 10,
-          color: '#ef4444',
-          vx: (Math.random() - 0.5) * 2,
-          vy: (Math.random() - 0.5) * 2
+          x: Math.random() * (MAP_SIZE - 200) + 100,
+          y: Math.random() * (MAP_SIZE - 200) + 100,
+          radius: Math.random() * 15 + 10,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: (Math.random() - 0.5) * 1.8,
+          vy: (Math.random() - 0.5) * 1.8
         });
       }
+    }
+
+    function generateFood() {
+      return {
+        x: Math.random() * (MAP_SIZE - 60) + 30,
+        y: Math.random() * (MAP_SIZE - 60) + 30,
+        radius: Math.random() * 5 + 7, // حجم الطعام أكبر وأوضح
+        color: colors[Math.floor(Math.random() * colors.length)],
+        shape: shapes[Math.floor(Math.random() * shapes.length)]
+      };
     }
 
     function startGame() {
@@ -176,46 +199,58 @@
       isPlaying = true;
     }
 
-    function gameOver() {
+    function gameOver(reason) {
       isPlaying = false;
-      document.getElementById('finalScore').innerText = Math.floor(player.radius);
+      document.getElementById('deathReason').innerText = reason || 'خسرت اللعبة!';
+      document.getElementById('finalScore').innerText = Math.floor(snake.length);
       document.getElementById('gameOverScreen').classList.remove('hidden');
     }
 
     function update() {
       if (!isPlaying) return;
 
-      const targetX = player.x + (mouse.x - canvas.width / 2);
-      const targetY = player.y + (mouse.y - canvas.height / 2);
+      const head = { ...snake.body[0] };
       
-      const dx = targetX - player.x;
-      const dy = targetY - player.y;
+      const targetX = head.x + (mouse.x - canvas.width / 2);
+      const targetY = head.y + (mouse.y - canvas.height / 2);
+      
+      const dx = targetX - head.x;
+      const dy = targetY - head.y;
       const dist = Math.hypot(dx, dy);
 
-      const speed = Math.max(1.5, 6 - player.radius * 0.05);
-
-      if (dist > 5) {
-        player.x += (dx / dist) * speed;
-        player.y += (dy / dist) * speed;
+      if (dist > 3) {
+        head.x += (dx / dist) * SNAKE_SPEED;
+        head.y += (dy / dist) * SNAKE_SPEED;
       }
 
-      player.x = Math.max(player.radius, Math.min(MAP_SIZE - player.radius, player.x));
-      player.y = Math.max(player.radius, Math.min(MAP_SIZE - player.radius, player.y));
+      // شرط الخسارة عند لمس الخط الأحمر الخارجي
+      if (
+        head.x <= snake.radius || 
+        head.x >= MAP_SIZE - snake.radius || 
+        head.y <= snake.radius || 
+        head.y >= MAP_SIZE - snake.radius
+      ) {
+        gameOver('اصطدمت بالحدود الحمراء! 🛑');
+        return;
+      }
 
+      snake.body.unshift(head);
+      while (snake.body.length > snake.length) {
+        snake.body.pop();
+      }
+
+      // أكل الطعام
       foods.forEach((food, index) => {
-        const d = Math.hypot(player.x - food.x, player.y - food.y);
-        if (d < player.radius + food.radius) {
-          player.radius += 0.3;
+        const d = Math.hypot(head.x - food.x, head.y - food.y);
+        if (d < snake.radius + food.radius) {
+          snake.length += 2;
+          snake.radius = Math.min(25, 12 + snake.length * 0.05); // كبر بسيط في العرض
           foods.splice(index, 1);
-          foods.push({
-            x: Math.random() * MAP_SIZE,
-            y: Math.random() * MAP_SIZE,
-            radius: Math.random() * 4 + 3,
-            color: colors[Math.floor(Math.random() * colors.length)]
-          });
+          foods.push(generateFood());
         }
       });
 
+      // حركة الأعداء والتصادم
       enemies.forEach((enemy) => {
         enemy.x += enemy.vx;
         enemy.y += enemy.vy;
@@ -223,31 +258,61 @@
         if (enemy.x < enemy.radius || enemy.x > MAP_SIZE - enemy.radius) enemy.vx *= -1;
         if (enemy.y < enemy.radius || enemy.y > MAP_SIZE - enemy.radius) enemy.vy *= -1;
 
-        const d = Math.hypot(player.x - enemy.x, player.y - enemy.y);
-        if (d < player.radius + enemy.radius) {
-          if (player.radius > enemy.radius * 1.1) {
-            player.radius += enemy.radius * 0.4;
-            enemy.x = Math.random() * MAP_SIZE;
-            enemy.y = Math.random() * MAP_SIZE;
-            enemy.radius = player.radius * (Math.random() * 0.8 + 0.4);
-          } else if (enemy.radius > player.radius * 1.1) {
-            gameOver();
+        const d = Math.hypot(head.x - enemy.x, head.y - enemy.y);
+        if (d < snake.radius + enemy.radius) {
+          if (snake.radius > enemy.radius * 1.1) {
+            snake.length += 8;
+            enemy.x = Math.random() * (MAP_SIZE - 100) + 50;
+            enemy.y = Math.random() * (MAP_SIZE - 100) + 50;
+            enemy.color = colors[Math.floor(Math.random() * colors.length)];
+          } else {
+            gameOver('التهمك أحد الأعداء! 💥');
           }
         }
       });
 
-      document.getElementById('score').innerText = Math.floor(player.radius);
+      document.getElementById('score').innerText = Math.floor(snake.length);
+    }
+
+    function drawFood(food) {
+      ctx.fillStyle = food.color;
+      ctx.beginPath();
+      
+      if (food.shape === 'circle') {
+        ctx.arc(food.x, food.y, food.radius, 0, Math.PI * 2);
+      } else if (food.shape === 'square') {
+        ctx.rect(food.x - food.radius, food.y - food.radius, food.radius * 2, food.radius * 2);
+      } else if (food.shape === 'star') {
+        // رسم نجمة ثلاثية أو أركان مميزة
+        for (let i = 0; i < 5; i++) {
+          ctx.lineTo(
+            food.x + Math.cos((18 + i * 72) * Math.PI / 180) * food.radius,
+            food.y - Math.sin((18 + i * 72) * Math.PI / 180) * food.radius
+          );
+          ctx.lineTo(
+            food.x + Math.cos((54 + i * 72) * Math.PI / 180) * (food.radius / 2),
+            food.y - Math.sin((54 + i * 72) * Math.PI / 180) * (food.radius / 2)
+          );
+        }
+      }
+      ctx.closePath();
+      ctx.fill();
     }
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      ctx.save();
-      ctx.translate(canvas.width / 2 - player.x, canvas.height / 2 - player.y);
+      if (!snake.body[0]) return;
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.lineWidth = 2;
-      const gridSize = 80;
+      const head = snake.body[0];
+
+      ctx.save();
+      ctx.translate(canvas.width / 2 - head.x, canvas.height / 2 - head.y);
+
+      // رسم شبكة الخريطة
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1.5;
+      const gridSize = 60;
       for (let x = 0; x < MAP_SIZE; x += gridSize) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
@@ -261,41 +326,41 @@
         ctx.stroke();
       }
 
+      // رسم الحدود الحمراء القاتلة
       ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 5;
+      ctx.lineWidth = 8;
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 15;
       ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
+      ctx.shadowBlur = 0;
 
-      foods.forEach(food => {
-        ctx.beginPath();
-        ctx.arc(food.x, food.y, food.radius, 0, Math.PI * 2);
-        ctx.fillStyle = food.color;
-        ctx.fill();
-      });
+      // رسم الأكل المتنوع
+      foods.forEach(food => drawFood(food));
 
+      // رسم الأعداء المتنوعين الألوان
       enemies.forEach(enemy => {
         ctx.beginPath();
         ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
         ctx.fillStyle = enemy.color;
         ctx.fill();
-        ctx.strokeStyle = '#fff';
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.stroke();
       });
 
+      // رسم الثعبان (جسم بدون كتابة أسماء)
       if (isPlaying) {
-        ctx.beginPath();
-        ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-        ctx.fillStyle = player.color;
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold ' + Math.max(12, player.radius * 0.6) + 'px Segoe UI';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('عبده', player.x, player.y);
+        for (let i = snake.body.length - 1; i >= 0; i--) {
+          const pt = snake.body[i];
+          const segmentRadius = Math.max(4, snake.radius - (i * 0.15));
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, segmentRadius, 0, Math.PI * 2);
+          ctx.fillStyle = i === 0 ? '#0284c7' : snake.color;
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
       }
 
       ctx.restore();
