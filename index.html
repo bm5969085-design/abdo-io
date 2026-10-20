@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>عبده.io - لعبة الثعابين الاحترافية</title>
+  <title>عبده.io - عالم الشخصيات والمظاهر</title>
   <style>
     * {
       box-sizing: border-box;
@@ -39,7 +39,6 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       z-index: 5;
     }
-    /* لوحة المتصدرين */
     #leaderboard {
       position: absolute;
       top: 15px;
@@ -92,37 +91,42 @@
       color: #94a3b8;
       margin-bottom: 15px;
       max-width: 450px;
-      line-height: 1.5;
     }
-    /* اختيار السكنات */
     .skins-container {
       display: flex;
       gap: 12px;
       margin-bottom: 20px;
       flex-wrap: wrap;
       justify-content: center;
-      max-width: 500px;
+      max-width: 520px;
     }
     .skin-card {
-      width: 65px;
-      height: 65px;
-      border-radius: 50%;
+      width: 75px;
+      height: 75px;
+      border-radius: 20px;
       border: 3px solid transparent;
       cursor: pointer;
       transition: transform 0.2s, border-color 0.2s;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 12px;
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.05);
       box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
+    .skin-card span.icon {
+      font-size: 26px;
+      margin-bottom: 3px;
+    }
     .skin-card:hover {
-      transform: scale(1.1);
+      transform: scale(1.08);
     }
     .skin-card.active {
       border-color: #38bdf8;
-      transform: scale(1.15);
+      transform: scale(1.12);
+      background: rgba(56, 189, 248, 0.15);
       box-shadow: 0 0 15px #38bdf8;
     }
     .btn {
@@ -148,29 +152,25 @@
 </head>
 <body>
 
-  <!-- واجهة البيانات -->
   <div id="ui">
     <div>الطول: <span id="score">15</span></div>
     <div id="status" style="font-size: 12px; color: #eab308; margin-top:3px;">اضغط باستمرار للاندفاع ⚡</div>
   </div>
 
-  <!-- لوحة الصدارة -->
   <div id="leaderboard">
     <h3>🏆 المتصدرون</h3>
     <div id="lb-list"></div>
   </div>
 
-  <!-- شاشة البداية وسكنات الثعابين -->
   <div id="startScreen" class="overlay">
     <h1>عبده.io 🐍</h1>
-    <p>اختر مظهر ثعبانك المفضّل وابدأ التنافس!</p>
+    <p>اختر شخصيتك المفضلة وانطلق في الخريطة!</p>
     
     <div class="skins-container" id="skinsList"></div>
 
     <button class="btn" onclick="startGame()">ابدأ اللعب الآن</button>
   </div>
 
-  <!-- شاشة الخسارة -->
   <div id="gameOverScreen" class="overlay hidden">
     <h1 style="color: #ef4444;" id="deathReason">انتهت اللعبة! 💥</h1>
     <p>وصل طولك النهائي إلى: <span id="finalScore">0</span></p>
@@ -190,14 +190,13 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // قائمة السكنات المتاحة
+    // السكنات والشخصيات التفاعلية
     const SKINS = [
-      { id: 'cyan', name: 'النيون', head: '#0284c7', body: '#38bdf8' },
-      { id: 'emerald', name: 'الزمرد', head: '#15803d', body: '#22c55e' },
-      { id: 'purple', name: 'الفضاء', head: '#6b21a8', body: '#a855f7' },
-      { id: 'gold', name: 'الذهبي', head: '#ca8a04', body: '#eab308' },
-      { id: 'crimson', name: 'البركان', head: '#be123c', body: '#f43f5e' },
-      { id: 'orange', name: 'النار', head: '#c2410c', body: '#f97316' }
+      { id: 'duck', name: 'البطة 🦆', icon: '🦆', head: '#eab308', body: '#fde047', type: 'duck' },
+      { id: 'dragon', name: 'التنين 🐲', icon: '🐲', head: '#15803d', body: '#22c55e', type: 'dragon' },
+      { id: 'ufo', name: 'فضائي 🛸', icon: '🛸', head: '#0284c7', body: '#38bdf8', type: 'ufo' },
+      { id: 'apple', name: 'تفاحة 🍎', icon: '🍎', head: '#be123c', body: '#f43f5e', type: 'apple' },
+      { id: 'demon', name: 'الشرس 😈', icon: '😈', head: '#7c3aed', body: '#a855f7', type: 'demon' }
     ];
 
     let selectedSkin = SKINS[0];
@@ -207,28 +206,24 @@
 
     const MAP_SIZE = 2800;
     const FOOD_COUNT = 400;
-    const POWERUP_COUNT = 20;
     const BOT_COUNT = 15;
 
     let playerSnake = {
       name: 'عبده',
       body: [],
       length: 15,
-      radius: 12,
+      radius: 13,
       skin: selectedSkin
     };
 
     let foods = [];
-    let powerups = [];
     let botSnakes = [];
 
-    // إنشاء قائمة اختيار السكنات في شاشة البداية
     const skinsListEl = document.getElementById('skinsList');
     SKINS.forEach((skin, index) => {
       const card = document.createElement('div');
       card.className = `skin-card ${index === 0 ? 'active' : ''}`;
-      card.style.background = `radial-gradient(circle, ${skin.body}, ${skin.head})`;
-      card.innerText = skin.name;
+      card.innerHTML = `<span class="icon">${skin.icon}</span><span>${skin.name}</span>`;
       card.onclick = () => {
         document.querySelectorAll('.skin-card').forEach(c => c.classList.remove('active'));
         card.classList.add('active');
@@ -237,7 +232,6 @@
       skinsListEl.appendChild(card);
     });
 
-    // التحكم بالاندفاع السريع
     window.addEventListener('mousedown', () => isBoosting = true);
     window.addEventListener('mouseup', () => isBoosting = false);
     window.addEventListener('touchstart', () => isBoosting = true);
@@ -262,7 +256,7 @@
       playerSnake.skin = selectedSkin;
       playerSnake.body = [];
       playerSnake.length = 15;
-      playerSnake.radius = 12;
+      playerSnake.radius = 13;
 
       for (let i = 0; i < playerSnake.length; i++) {
         playerSnake.body.push({ x: startX, y: startY + i * 5 });
@@ -270,9 +264,6 @@
 
       foods = [];
       for (let i = 0; i < FOOD_COUNT; i++) foods.push(generateFood());
-
-      powerups = [];
-      for (let i = 0; i < POWERUP_COUNT; i++) powerups.push(generatePowerup());
 
       botSnakes = [];
       for (let i = 0; i < BOT_COUNT; i++) botSnakes.push(generateBotSnake(i + 1));
@@ -284,18 +275,6 @@
         y: y || Math.random() * (MAP_SIZE - 100) + 50,
         radius: radius || Math.random() * 3 + 5,
         color: color || SKINS[Math.floor(Math.random() * SKINS.length)].body
-      };
-    }
-
-    function generatePowerup() {
-      const types = ['speed', 'growth'];
-      const type = types[Math.floor(Math.random() * types.length)];
-      return {
-        x: Math.random() * (MAP_SIZE - 100) + 50,
-        y: Math.random() * (MAP_SIZE - 100) + 50,
-        radius: 12,
-        type: type,
-        color: type === 'speed' ? '#eab308' : '#a855f7'
       };
     }
 
@@ -314,7 +293,7 @@
         name: `لاعب ${id}`,
         body: body,
         length: length,
-        radius: 11,
+        radius: 12,
         skin: skin,
         angle: Math.random() * Math.PI * 2
       };
@@ -334,7 +313,6 @@
       document.getElementById('gameOverScreen').classList.remove('hidden');
     }
 
-    // ترك نقاط طعام عند انفجار الثعبان
     function explodeSnake(snake) {
       snake.body.forEach(pt => {
         if (Math.random() < 0.6) {
@@ -353,7 +331,6 @@
 
       let speed = 2.2;
 
-      // الاندفاع السريع باستهلاك الطول
       if (isBoosting && playerSnake.length > 10) {
         speed = 4.2;
         playerSnake.length -= 0.08;
@@ -376,7 +353,6 @@
         head.y += (dy / dist) * speed;
       }
 
-      // الحدود
       if (
         head.x <= playerSnake.radius || 
         head.x >= MAP_SIZE - playerSnake.radius || 
@@ -393,7 +369,6 @@
         playerSnake.body.pop();
       }
 
-      // أكل الطعام
       foods.forEach((food, index) => {
         const d = Math.hypot(head.x - food.x, head.y - food.y);
         if (d < playerSnake.radius + food.radius) {
@@ -403,7 +378,6 @@
         }
       });
 
-      // حركة الأعداء
       botSnakes.forEach((bot, botIndex) => {
         let botHead = { ...bot.body[0] };
         
@@ -422,7 +396,6 @@
           bot.body.pop();
         }
 
-        // التصادم مع الأعداء
         const d = Math.hypot(head.x - botHead.x, head.y - botHead.y);
         if (d < playerSnake.radius + bot.radius) {
           if (playerSnake.length >= bot.length) {
@@ -459,13 +432,98 @@
       });
     }
 
+    // رسم ملامح وتفاصيل رأس الشخصيات
+    function drawSnakeHead(ctx, head, angle, radius, skin) {
+      ctx.save();
+      ctx.translate(head.x, head.y);
+      ctx.rotate(angle);
+
+      // رسم قاعدة الرأس
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.fillStyle = skin.head;
+      ctx.fill();
+
+      // التفاصيل المخصصة حسب كل شخصية
+      if (skin.type === 'duck') {
+        // عينان
+        ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.arc(radius * 0.3, -radius * 0.4, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(radius * 0.3, radius * 0.4, 3, 0, Math.PI * 2); ctx.fill();
+        // المنقار البرتقالي
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.ellipse(radius * 0.8, 0, radius * 0.5, radius * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (skin.type === 'dragon') {
+        // عينان شرستان
+        ctx.fillStyle = '#eab308';
+        ctx.beginPath(); ctx.arc(radius * 0.2, -radius * 0.4, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(radius * 0.2, radius * 0.4, 4, 0, Math.PI * 2); ctx.fill();
+        // قرون
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath(); ctx.moveTo(-radius * 0.2, -radius); ctx.lineTo(-radius * 0.8, -radius * 1.3); ctx.lineTo(0, -radius * 0.6); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-radius * 0.2, radius); ctx.lineTo(-radius * 0.8, radius * 1.3); ctx.lineTo(0, radius * 0.6); ctx.fill();
+      } else if (skin.type === 'ufo') {
+        // قبة زجاجية فضائية
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.beginPath(); ctx.arc(0, 0, radius * 0.6, 0, Math.PI * 2); ctx.fill();
+        // عين فضائية بالمنتصف
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath(); ctx.arc(radius * 0.2, 0, 4, 0, Math.PI * 2); ctx.fill();
+      } else if (skin.type === 'apple') {
+        // ورقة الشجر الخضراء
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.ellipse(-radius * 0.8, -radius * 0.3, radius * 0.4, radius * 0.2, Math.PI / 4, 0, Math.PI * 2);
+        ctx.fill();
+        // العينان
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(radius * 0.3, -radius * 0.3, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(radius * 0.3, radius * 0.3, 4, 0, Math.PI * 2); ctx.fill();
+      } else if (skin.type === 'demon') {
+        // عينان مع معالم حادة
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath(); ctx.arc(radius * 0.3, -radius * 0.4, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(radius * 0.3, radius * 0.4, 3, 0, Math.PI * 2); ctx.fill();
+        // قرون شيطانية
+        ctx.fillStyle = '#3b0764';
+        ctx.beginPath(); ctx.moveTo(0, -radius * 0.8); ctx.lineTo(radius * 0.5, -radius * 1.4); ctx.lineTo(-radius * 0.4, -radius * 0.5); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(0, radius * 0.8); ctx.lineTo(radius * 0.5, radius * 1.4); ctx.lineTo(-radius * 0.4, radius * 0.5); ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawSnake(ctx, snake) {
+      if (!snake.body || snake.body.length === 0) return;
+
+      // رسم الجسم
+      for (let i = snake.body.length - 1; i >= 1; i--) {
+        const pt = snake.body[i];
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, snake.radius, 0, Math.PI * 2);
+        ctx.fillStyle = snake.skin.body;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // حساب زاوية الرأس
+      const head = snake.body[0];
+      const next = snake.body[1] || head;
+      const angle = Math.atan2(head.y - next.y, head.x - next.x);
+
+      // رسم الرأس والملامح المخصصة
+      drawSnakeHead(ctx, head, angle, snake.radius, snake.skin);
+    }
+
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!playerSnake.body[0]) return;
 
       const head = playerSnake.body[0];
-
-      // كاميرا مرنة تبتعد مع زيادة الطول
       const zoom = Math.max(0.6, 1 - playerSnake.length * 0.001);
 
       ctx.save();
@@ -473,7 +531,7 @@
       ctx.scale(zoom, zoom);
       ctx.translate(-head.x, -head.y);
 
-      // رسم الشبكة والحدود
+      // رسم الخريطة والحدود
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
       ctx.lineWidth = 1.5;
       const gridSize = 80;
@@ -496,30 +554,11 @@
         ctx.fill();
       });
 
-      // الثعابين الآلية
-      botSnakes.forEach(bot => {
-        for (let i = bot.body.length - 1; i >= 0; i--) {
-          const pt = bot.body[i];
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, bot.radius, 0, Math.PI * 2);
-          ctx.fillStyle = i === 0 ? bot.skin.head : bot.skin.body;
-          ctx.fill();
-        }
-      });
+      // رسم ثعابين الآليين
+      botSnakes.forEach(bot => drawSnake(ctx, bot));
 
-      // ثعبان اللاعب
-      if (isPlaying) {
-        for (let i = playerSnake.body.length - 1; i >= 0; i--) {
-          const pt = playerSnake.body[i];
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, playerSnake.radius, 0, Math.PI * 2);
-          ctx.fillStyle = i === 0 ? playerSnake.skin.head : playerSnake.skin.body;
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-      }
+      // رسم ثعبان اللاعب
+      if (isPlaying) drawSnake(ctx, playerSnake);
 
       ctx.restore();
     }
