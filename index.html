@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>عبده.io - لعبة الثعبان والبقاء</title>
+  <title>عبده.io - لعبة الثعابين المتقدمة</title>
   <style>
     * {
       box-sizing: border-box;
@@ -30,13 +30,18 @@
       color: #fff;
       font-size: 18px;
       font-weight: bold;
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 0.8);
       padding: 12px 20px;
       border-radius: 12px;
       backdrop-filter: blur(5px);
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       pointer-events: none;
       border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    #status {
+      font-size: 14px;
+      color: #38bdf8;
+      margin-top: 4px;
     }
     .overlay {
       position: absolute;
@@ -59,10 +64,11 @@
       text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
     }
     .overlay p {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       color: #94a3b8;
       margin-bottom: 25px;
-      max-width: 400px;
+      max-width: 450px;
+      line-height: 1.6;
     }
     .btn {
       background: linear-gradient(135deg, #0284c7, #2563eb);
@@ -88,17 +94,21 @@
 <body>
 
   <div id="ui">
-    <div>طول عبده: <span id="score">10</span></div>
+    <div>طول عبده: <span id="score">15</span></div>
+    <div id="status">السرعة: العادية</div>
   </div>
 
   <div id="startScreen" class="overlay">
     <h1>عبده.io 🐍</h1>
-    <p>حرك ثعبانك بالموس أو اللمس لتأكل الأشكال الملونة وتكبر! احذر من لمس الحدود الحمراء أو الأعداء الأكبر منك!</p>
+    <p>
+      تحدّ الثعابين الأخرى في خريطة واسعة!<br>
+      ⚡ **الأصفر:** سرعة فائقة | 💥 **البنفسجي:** نمو ضخم متسارع
+    </p>
     <button class="btn" onclick="startGame()">ابدأ اللعب الآن</button>
   </div>
 
   <div id="gameOverScreen" class="overlay hidden">
-    <h1 style="color: #ef4444;" id="deathReason">تم التهام عبده! 💥</h1>
+    <h1 style="color: #ef4444;" id="deathReason">انتهت اللعبة! 💥</h1>
     <p>وصل طول الثعبان النهائي إلى: <span id="finalScore">0</span></p>
     <button class="btn" onclick="startGame()">العب مرة أخرى</button>
   </div>
@@ -118,9 +128,20 @@
 
     let isPlaying = false;
     let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
-    
-    // إعدادات اللاعب (الثعبان)
-    let snake = {
+
+    const MAP_SIZE = 2600; // خريطة أوسع بكثير
+    const FOOD_COUNT = 350;
+    const POWERUP_COUNT = 25;
+    const BOT_COUNT = 12;
+
+    let baseSpeed = 2.2;
+    let currentSpeed = baseSpeed;
+    let speedBoostTimer = 0;
+
+    const colors = ['#f43f5e', '#a855f7', '#22c55e', '#eab308', '#06b6d4', '#ec4899', '#f97316'];
+
+    // كائن الثعبان الرئيسي
+    let playerSnake = {
       body: [],
       length: 15,
       radius: 12,
@@ -128,15 +149,8 @@
     };
 
     let foods = [];
-    let enemies = [];
-    
-    const FOOD_COUNT = 220; // زيادة كمية الطعام وتكثيفه
-    const ENEMY_COUNT = 10;
-    const MAP_SIZE = 1400;  // تصغير الخريطة حبة لتقريب الأكل والأعداء
-    const SNAKE_SPEED = 2.2; // تقليل السرعة لتصبح أهدأ ومريحة
-
-    const colors = ['#f43f5e', '#a855f7', '#22c55e', '#eab308', '#06b6d4', '#ec4899', '#f97316'];
-    const shapes = ['circle', 'square', 'star'];
+    let powerups = [];
+    let botSnakes = [];
 
     window.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
@@ -153,42 +167,73 @@
     function initGame() {
       const startX = MAP_SIZE / 2;
       const startY = MAP_SIZE / 2;
-      
-      snake.body = [];
-      snake.length = 15;
-      snake.radius = 12;
 
-      for (let i = 0; i < snake.length; i++) {
-        snake.body.push({ x: startX, y: startY + i * 5 });
+      playerSnake.body = [];
+      playerSnake.length = 15;
+      playerSnake.radius = 12;
+      currentSpeed = baseSpeed;
+
+      for (let i = 0; i < playerSnake.length; i++) {
+        playerSnake.body.push({ x: startX, y: startY + i * 5 });
       }
 
-      // إنشاء طعام أكبر وفي أماكن متقاربة وأشكال متنوعة
+      // إنشاء الطعام العادي
       foods = [];
       for (let i = 0; i < FOOD_COUNT; i++) {
         foods.push(generateFood());
       }
 
-      // إنشاء أعداء بألوان مختلفة ومتنوعة
-      enemies = [];
-      for (let i = 0; i < ENEMY_COUNT; i++) {
-        enemies.push({
-          x: Math.random() * (MAP_SIZE - 200) + 100,
-          y: Math.random() * (MAP_SIZE - 200) + 100,
-          radius: Math.random() * 15 + 10,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          vx: (Math.random() - 0.5) * 1.8,
-          vy: (Math.random() - 0.5) * 1.8
-        });
+      // إنشاء الأكلات الخاصة (Power-ups)
+      powerups = [];
+      for (let i = 0; i < POWERUP_COUNT; i++) {
+        powerups.push(generatePowerup());
+      }
+
+      // إنشاء الثعابين المنافسة
+      botSnakes = [];
+      for (let i = 0; i < BOT_COUNT; i++) {
+        botSnakes.push(generateBotSnake());
       }
     }
 
     function generateFood() {
       return {
-        x: Math.random() * (MAP_SIZE - 60) + 30,
-        y: Math.random() * (MAP_SIZE - 60) + 30,
-        radius: Math.random() * 5 + 7, // حجم الطعام أكبر وأوضح
-        color: colors[Math.floor(Math.random() * colors.length)],
-        shape: shapes[Math.floor(Math.random() * shapes.length)]
+        x: Math.random() * (MAP_SIZE - 100) + 50,
+        y: Math.random() * (MAP_SIZE - 100) + 50,
+        radius: Math.random() * 4 + 6,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      };
+    }
+
+    function generatePowerup() {
+      const types = ['speed', 'growth'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      return {
+        x: Math.random() * (MAP_SIZE - 100) + 50,
+        y: Math.random() * (MAP_SIZE - 100) + 50,
+        radius: 12,
+        type: type,
+        color: type === 'speed' ? '#eab308' : '#a855f7'
+      };
+    }
+
+    function generateBotSnake() {
+      const startX = Math.random() * (MAP_SIZE - 200) + 100;
+      const startY = Math.random() * (MAP_SIZE - 200) + 100;
+      const length = Math.floor(Math.random() * 20) + 10;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      
+      let body = [];
+      for (let i = 0; i < length; i++) {
+        body.push({ x: startX, y: startY + i * 5 });
+      }
+
+      return {
+        body: body,
+        length: length,
+        radius: 11,
+        color: color,
+        angle: Math.random() * Math.PI * 2
       };
     }
 
@@ -201,178 +246,61 @@
 
     function gameOver(reason) {
       isPlaying = false;
-      document.getElementById('deathReason').innerText = reason || 'خسرت اللعبة!';
-      document.getElementById('finalScore').innerText = Math.floor(snake.length);
+      document.getElementById('deathReason').innerText = reason || 'انتهت اللعبة!';
+      document.getElementById('finalScore').innerText = Math.floor(playerSnake.length);
       document.getElementById('gameOverScreen').classList.remove('hidden');
     }
 
     function update() {
       if (!isPlaying) return;
 
-      const head = { ...snake.body[0] };
-      
+      // إدارة سرعة الطاقة
+      if (speedBoostTimer > 0) {
+        speedBoostTimer--;
+        currentSpeed = baseSpeed * 1.8;
+        document.getElementById('status').innerText = 'السرعة: فائقة ⚡';
+      } else {
+        currentSpeed = baseSpeed;
+        document.getElementById('status').innerText = 'السرعة: العادية';
+      }
+
+      const head = { ...playerSnake.body[0] };
       const targetX = head.x + (mouse.x - canvas.width / 2);
       const targetY = head.y + (mouse.y - canvas.height / 2);
-      
+
       const dx = targetX - head.x;
       const dy = targetY - head.y;
       const dist = Math.hypot(dx, dy);
 
       if (dist > 3) {
-        head.x += (dx / dist) * SNAKE_SPEED;
-        head.y += (dy / dist) * SNAKE_SPEED;
+        head.x += (dx / dist) * currentSpeed;
+        head.y += (dy / dist) * currentSpeed;
       }
 
-      // شرط الخسارة عند لمس الخط الأحمر الخارجي
+      // اصطدام مع الحدود الحمراء
       if (
-        head.x <= snake.radius || 
-        head.x >= MAP_SIZE - snake.radius || 
-        head.y <= snake.radius || 
-        head.y >= MAP_SIZE - snake.radius
+        head.x <= playerSnake.radius || 
+        head.x >= MAP_SIZE - playerSnake.radius || 
+        head.y <= playerSnake.radius || 
+        head.y >= MAP_SIZE - playerSnake.radius
       ) {
         gameOver('اصطدمت بالحدود الحمراء! 🛑');
         return;
       }
 
-      snake.body.unshift(head);
-      while (snake.body.length > snake.length) {
-        snake.body.pop();
+      playerSnake.body.unshift(head);
+      while (playerSnake.body.length > playerSnake.length) {
+        playerSnake.body.pop();
       }
 
-      // أكل الطعام
+      // أكل الطعام العادي
       foods.forEach((food, index) => {
         const d = Math.hypot(head.x - food.x, head.y - food.y);
-        if (d < snake.radius + food.radius) {
-          snake.length += 2;
-          snake.radius = Math.min(25, 12 + snake.length * 0.05); // كبر بسيط في العرض
+        if (d < playerSnake.radius + food.radius) {
+          playerSnake.length += 1.5;
           foods.splice(index, 1);
           foods.push(generateFood());
         }
       });
 
-      // حركة الأعداء والتصادم
-      enemies.forEach((enemy) => {
-        enemy.x += enemy.vx;
-        enemy.y += enemy.vy;
-
-        if (enemy.x < enemy.radius || enemy.x > MAP_SIZE - enemy.radius) enemy.vx *= -1;
-        if (enemy.y < enemy.radius || enemy.y > MAP_SIZE - enemy.radius) enemy.vy *= -1;
-
-        const d = Math.hypot(head.x - enemy.x, head.y - enemy.y);
-        if (d < snake.radius + enemy.radius) {
-          if (snake.radius > enemy.radius * 1.1) {
-            snake.length += 8;
-            enemy.x = Math.random() * (MAP_SIZE - 100) + 50;
-            enemy.y = Math.random() * (MAP_SIZE - 100) + 50;
-            enemy.color = colors[Math.floor(Math.random() * colors.length)];
-          } else {
-            gameOver('التهمك أحد الأعداء! 💥');
-          }
-        }
-      });
-
-      document.getElementById('score').innerText = Math.floor(snake.length);
-    }
-
-    function drawFood(food) {
-      ctx.fillStyle = food.color;
-      ctx.beginPath();
-      
-      if (food.shape === 'circle') {
-        ctx.arc(food.x, food.y, food.radius, 0, Math.PI * 2);
-      } else if (food.shape === 'square') {
-        ctx.rect(food.x - food.radius, food.y - food.radius, food.radius * 2, food.radius * 2);
-      } else if (food.shape === 'star') {
-        // رسم نجمة ثلاثية أو أركان مميزة
-        for (let i = 0; i < 5; i++) {
-          ctx.lineTo(
-            food.x + Math.cos((18 + i * 72) * Math.PI / 180) * food.radius,
-            food.y - Math.sin((18 + i * 72) * Math.PI / 180) * food.radius
-          );
-          ctx.lineTo(
-            food.x + Math.cos((54 + i * 72) * Math.PI / 180) * (food.radius / 2),
-            food.y - Math.sin((54 + i * 72) * Math.PI / 180) * (food.radius / 2)
-          );
-        }
-      }
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (!snake.body[0]) return;
-
-      const head = snake.body[0];
-
-      ctx.save();
-      ctx.translate(canvas.width / 2 - head.x, canvas.height / 2 - head.y);
-
-      // رسم شبكة الخريطة
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
-      ctx.lineWidth = 1.5;
-      const gridSize = 60;
-      for (let x = 0; x < MAP_SIZE; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, MAP_SIZE);
-        ctx.stroke();
-      }
-      for (let y = 0; y < MAP_SIZE; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(MAP_SIZE, y);
-        ctx.stroke();
-      }
-
-      // رسم الحدود الحمراء القاتلة
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 8;
-      ctx.shadowColor = '#ef4444';
-      ctx.shadowBlur = 15;
-      ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
-      ctx.shadowBlur = 0;
-
-      // رسم الأكل المتنوع
-      foods.forEach(food => drawFood(food));
-
-      // رسم الأعداء المتنوعين الألوان
-      enemies.forEach(enemy => {
-        ctx.beginPath();
-        ctx.arc(enemy.x, enemy.y, enemy.radius, 0, Math.PI * 2);
-        ctx.fillStyle = enemy.color;
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      });
-
-      // رسم الثعبان (جسم بدون كتابة أسماء)
-      if (isPlaying) {
-        for (let i = snake.body.length - 1; i >= 0; i--) {
-          const pt = snake.body[i];
-          const segmentRadius = Math.max(4, snake.radius - (i * 0.15));
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, segmentRadius, 0, Math.PI * 2);
-          ctx.fillStyle = i === 0 ? '#0284c7' : snake.color;
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-      }
-
-      ctx.restore();
-    }
-
-    function gameLoop() {
-      update();
-      draw();
-      requestAnimationFrame(gameLoop);
-    }
-
-    gameLoop();
-  </script>
-</body>
-</html>
+      // أكل المكافآت الأ
