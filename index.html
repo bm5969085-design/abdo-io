@@ -37,6 +37,7 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       pointer-events: none;
       border: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 5;
     }
     #status {
       font-size: 14px;
@@ -46,7 +47,7 @@
     .overlay {
       position: absolute;
       inset: 0;
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.9);
       backdrop-filter: blur(8px);
       display: flex;
       flex-direction: column;
@@ -102,7 +103,7 @@
     <h1>عبده.io 🐍</h1>
     <p>
       تحدّ الثعابين الأخرى في خريطة واسعة!<br>
-      ⚡ **الأصفر:** سرعة فائقة | 💥 **البنفسجي:** نمو ضخم متسارع
+      ⚡ <b>الأصفر:</b> سرعة فائقة | 💥 <b>البنفسجي:</b> نمو ضخم متسارع
     </p>
     <button class="btn" onclick="startGame()">ابدأ اللعب الآن</button>
   </div>
@@ -129,7 +130,7 @@
     let isPlaying = false;
     let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
 
-    const MAP_SIZE = 2600; // خريطة أوسع بكثير
+    const MAP_SIZE = 2600;
     const FOOD_COUNT = 350;
     const POWERUP_COUNT = 25;
     const BOT_COUNT = 12;
@@ -140,7 +141,6 @@
 
     const colors = ['#f43f5e', '#a855f7', '#22c55e', '#eab308', '#06b6d4', '#ec4899', '#f97316'];
 
-    // كائن الثعبان الرئيسي
     let playerSnake = {
       body: [],
       length: 15,
@@ -177,19 +177,16 @@
         playerSnake.body.push({ x: startX, y: startY + i * 5 });
       }
 
-      // إنشاء الطعام العادي
       foods = [];
       for (let i = 0; i < FOOD_COUNT; i++) {
         foods.push(generateFood());
       }
 
-      // إنشاء الأكلات الخاصة (Power-ups)
       powerups = [];
       for (let i = 0; i < POWERUP_COUNT; i++) {
         powerups.push(generatePowerup());
       }
 
-      // إنشاء الثعابين المنافسة
       botSnakes = [];
       for (let i = 0; i < BOT_COUNT; i++) {
         botSnakes.push(generateBotSnake());
@@ -254,7 +251,6 @@
     function update() {
       if (!isPlaying) return;
 
-      // إدارة سرعة الطاقة
       if (speedBoostTimer > 0) {
         speedBoostTimer--;
         currentSpeed = baseSpeed * 1.8;
@@ -277,7 +273,6 @@
         head.y += (dy / dist) * currentSpeed;
       }
 
-      // اصطدام مع الحدود الحمراء
       if (
         head.x <= playerSnake.radius || 
         head.x >= MAP_SIZE - playerSnake.radius || 
@@ -293,7 +288,6 @@
         playerSnake.body.pop();
       }
 
-      // أكل الطعام العادي
       foods.forEach((food, index) => {
         const d = Math.hypot(head.x - food.x, head.y - food.y);
         if (d < playerSnake.radius + food.radius) {
@@ -303,4 +297,136 @@
         }
       });
 
-      // أكل المكافآت الأ
+      powerups.forEach((powerup, index) => {
+        const d = Math.hypot(head.x - powerup.x, head.y - powerup.y);
+        if (d < playerSnake.radius + powerup.radius) {
+          if (powerup.type === 'speed') {
+            speedBoostTimer = 250;
+          } else if (powerup.type === 'growth') {
+            playerSnake.length += 12;
+          }
+          powerups.splice(index, 1);
+          powerups.push(generatePowerup());
+        }
+      });
+
+      botSnakes.forEach((bot, botIndex) => {
+        let botHead = { ...bot.body[0] };
+        
+        if (Math.random() < 0.03) {
+          bot.angle += (Math.random() - 0.5) * 1.5;
+        }
+
+        botHead.x += Math.cos(bot.angle) * 1.8;
+        botHead.y += Math.sin(bot.angle) * 1.8;
+
+        if (botHead.x < 50 || botHead.x > MAP_SIZE - 50) bot.angle = Math.PI - bot.angle;
+        if (botHead.y < 50 || botHead.y > MAP_SIZE - 50) bot.angle = -bot.angle;
+
+        bot.body.unshift(botHead);
+        while (bot.body.length > bot.length) {
+          bot.body.pop();
+        }
+
+        const d = Math.hypot(head.x - botHead.x, head.y - botHead.y);
+        if (d < playerSnake.radius + bot.radius) {
+          if (playerSnake.length >= bot.length) {
+            playerSnake.length += bot.length * 0.5;
+            botSnakes[botIndex] = generateBotSnake();
+          } else {
+            gameOver('اصطدمت بثعبان أكبر منك! 🐍💥');
+          }
+        }
+      });
+
+      document.getElementById('score').innerText = Math.floor(playerSnake.length);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!playerSnake.body[0]) return;
+
+      const head = playerSnake.body[0];
+
+      ctx.save();
+      ctx.translate(canvas.width / 2 - head.x, canvas.height / 2 - head.y);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1.5;
+      const gridSize = 80;
+      for (let x = 0; x < MAP_SIZE; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, MAP_SIZE);
+        ctx.stroke();
+      }
+      for (let y = 0; y < MAP_SIZE; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(MAP_SIZE, y);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 10;
+      ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
+
+      foods.forEach(food => {
+        ctx.beginPath();
+        ctx.arc(food.x, food.y, food.radius, 0, Math.PI * 2);
+        ctx.fillStyle = food.color;
+        ctx.fill();
+      });
+
+      powerups.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.type === 'speed' ? '⚡' : '💥', p.x, p.y);
+      });
+
+      botSnakes.forEach(bot => {
+        for (let i = bot.body.length - 1; i >= 0; i--) {
+          const pt = bot.body[i];
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, bot.radius, 0, Math.PI * 2);
+          ctx.fillStyle = bot.color;
+          ctx.fill();
+        }
+      });
+
+      if (isPlaying) {
+        for (let i = playerSnake.body.length - 1; i >= 0; i--) {
+          const pt = playerSnake.body[i];
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, playerSnake.radius, 0, Math.PI * 2);
+          ctx.fillStyle = i === 0 ? '#0284c7' : playerSnake.color;
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>
