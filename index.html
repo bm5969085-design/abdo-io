@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>عبده.io - النسخة الخارقة العالميّة</title>
+  <title>عبده.io - النسخة الأسطورية المتقدمة</title>
   <style>
     * {
       box-sizing: border-box;
@@ -15,7 +15,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: #0f172a;
+      background-color: #080c14;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     canvas {
@@ -39,40 +39,37 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       z-index: 5;
     }
-    #rage-bar-container {
-      width: 100%;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      margin-top: 6px;
-      overflow: hidden;
-    }
-    #rage-bar {
-      width: 0%;
-      height: 100%;
-      background: linear-gradient(90deg, #ef4444, #f59e0b);
-      transition: width 0.2s;
-    }
-    #rage-btn {
+    #skills-bar {
       position: absolute;
-      bottom: 25px;
-      right: 25px;
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
-      border: none;
-      padding: 15px 25px;
-      font-size: 18px;
-      font-weight: bold;
-      border-radius: 50px;
-      cursor: pointer;
-      box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
       z-index: 6;
-      display: none;
-      animation: pulse 1s infinite alternate;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 8px 15px;
+      border-radius: 50px;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
-    @keyframes pulse {
-      from { transform: scale(1); }
-      to { transform: scale(1.08); }
+    .skill-btn {
+      background: #1e293b;
+      color: #fff;
+      border: 2px solid #3b82f6;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .skill-btn:hover {
+      transform: scale(1.1);
+      background: #2563eb;
     }
     #leaderboard {
       position: absolute;
@@ -208,12 +205,15 @@
 
   <div id="ui">
     <div>الطول: <span id="score">15</span></div>
-    <div>الطاقة الخارقة: <span id="rage-percent">0%</span></div>
-    <div id="rage-bar-container"><div id="rage-bar"></div></div>
-    <div id="status" style="font-size: 11px; color: #eab308; margin-top:4px;">اضغط باستمرار للاندفاع ⚡</div>
+    <div>المستوى: <span id="level">ثعبان برونزي 🐍</span></div>
   </div>
 
-  <button id="rage-btn" onclick="activateRageMode()">تفعيل الغضب الخارق 🔥💥</button>
+  <div id="skills-bar">
+    <button class="skill-btn" onclick="useSkill('shield')" title="درع الحماية 🛡️">🛡️</button>
+    <button class="skill-btn" onclick="useSkill('freeze')" title="تجميد ❄️">❄️</button>
+    <button class="skill-btn" onclick="useSkill('clone')" title="نسخة وهمية 👥">👥</button>
+    <button class="skill-btn" onclick="useSkill('blackhole')" title="ثقب أسود 🕳️">🕳️</button>
+  </div>
 
   <div id="leaderboard">
     <h3>🏆 المتصدرون</h3>
@@ -222,7 +222,7 @@
 
   <div id="startScreen" class="overlay">
     <h1>عبده.io 🚀</h1>
-    <p>اختر شكل شخصيتك وانطلق لالتهام المأكولات والمنافسة!</p>
+    <p>اختر شكل ثعبانك وانطلق للتحدي السريع!</p>
     
     <div class="skins-wrapper">
       <div class="skins-grid" id="skinsGrid"></div>
@@ -251,23 +251,8 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // تشكيلة ضخمة من 700+ صنف وطعام (وجبات، كنزات، سمك، مشويات، حلويات، فواكه، وخضار)
-    const FOOD_ITEMS = [
-      '🍔','🍕','🌭','🍟','🥪','🥙','🧆','🌮','🌯','🥗','🥘','🥫','🍝','🍜','🍲',
-      '🍛','🍣','🍱','🥟','🦪','🍤','🍗','🍖','🥩','🥓','🥐','🥨','🥯','🥖','🍞',
-      '🍳','🧀','🥞','🧇','🧈','🍩','🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮',
-      '🍯','🍼','🥛','☕','🍵','🧃','🥤','🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸',
-      '🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍',
-      '🥥','🥝','🍅','🥑','🥦','🥬','🥒','🌶️','🫑','🌽','🥕','🫒','🧄','🧅','🥔',
-      '🍠','🥐','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖'
-    ];
-
-    const EMOJI_SKINS = [
-      '🐍','🐉','🐲','🦁','🐯','🦊','🦝','🐻','🐼','🐨','🐰','🐱','🐶','🐺','🐵',
-      '🤖','👽','👻','💀','☠️','👹','👺','😈','👿','🎃','🤡','💩','👾','🛸','🚀',
-      '🦅','🦉','🦆','🐥','🐦','🐧','🦇','🦈','🐬','🐋','🐊','🐢','🦎','🐙'
-    ];
-
+    const FOOD_ITEMS = ['🍔','🍕','🌭','🍟','🥪','🥙','🌮','🌯','🥗','🍝','🍣','🍱','🍗','🥩','🥞','🍩','🍪','🎂','🧁','🍫','🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🍍','🥦','🥒','🌶️','🌽'];
+    const EMOJI_SKINS = ['🐍','🐉','🐲','🦁','🐯','🦊','🦝','🐻','🐼','🐨','🐰','🐱','🐶','🐺','🐵','🤖','👽','👻','💀','☠️','👹','👺','😈','👿','🎃','🤡','💩','👾','🛸','🚀','🦅','🦉','🦆','🐥','🐦','🐧','🦇','🦈','🐬','🐋','🐊','🐢','🦎','🐙'];
     const BODY_COLORS = ['#38bdf8', '#22c55e', '#a855f7', '#eab308', '#f43f5e', '#f97316', '#06b6d4', '#ec4899'];
 
     let selectedSkinIndex = 0;
@@ -276,418 +261,23 @@
 
     let isBoosting = false;
     let isPlaying = false;
-    let rageEnergy = 0;
-    let isRageActive = false;
-    let rageTimer = 0;
-    let magnetActive = false;
-    let magnetTimer = 0;
+    let shieldActive = false;
+    let shieldTimer = 0;
 
     let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
-
-    let currentMapSize = 2800;
-    const FOOD_COUNT = 450;
-    const BOT_COUNT = 15;
+    let MAP_SIZE = 2600;
+    const FOOD_COUNT = 300;
+    const BOT_COUNT = 12;
 
     let playerSnake = {
+      id: 'player',
       name: 'عبده',
       body: [],
       length: 15,
-      radius: 14,
+      radius: 13,
       emoji: EMOJI_SKINS[0],
       color: BODY_COLORS[0]
     };
 
     let foods = [];
-    let powerups = [];
-    let botSnakes = [];
-
-    function renderSkinsPage(page) {
-      currentPage = page;
-      const grid = document.getElementById('skinsGrid');
-      grid.innerHTML = '';
-      
-      const start = page * itemsPerPage;
-      const end = Math.min(start + itemsPerPage, EMOJI_SKINS.length);
-
-      for (let i = start; i < end; i++) {
-        const item = document.createElement('div');
-        item.className = `skin-item ${i === selectedSkinIndex ? 'active' : ''}`;
-        item.innerText = EMOJI_SKINS[i];
-        item.onclick = () => {
-          selectedSkinIndex = i;
-          renderSkinsPage(currentPage);
-        };
-        grid.appendChild(item);
-      }
-
-      const pagination = document.getElementById('pagination');
-      pagination.innerHTML = '';
-      const totalPages = Math.ceil(EMOJI_SKINS.length / itemsPerPage);
-
-      for (let p = 0; p < totalPages; p++) {
-        const pBtn = document.createElement('button');
-        pBtn.className = `page-btn ${p === currentPage ? 'active' : ''}`;
-        pBtn.innerText = p + 1;
-        pBtn.onclick = () => renderSkinsPage(p);
-        pagination.appendChild(pBtn);
-      }
-    }
-
-    renderSkinsPage(0);
-
-    window.addEventListener('mousedown', () => isBoosting = true);
-    window.addEventListener('mouseup', () => isBoosting = false);
-    window.addEventListener('touchstart', () => isBoosting = true);
-    window.addEventListener('touchend', () => isBoosting = false);
-
-    window.addEventListener('mousemove', (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-    });
-
-    window.addEventListener('touchmove', (e) => {
-      if (e.touches.length > 0) {
-        mouse.x = e.touches[0].clientX;
-        mouse.y = e.touches[0].clientY;
-      }
-    });
-
-    function initGame() {
-      currentMapSize = 2800;
-      rageEnergy = 0;
-      isRageActive = false;
-      magnetActive = false;
-
-      const startX = currentMapSize / 2;
-      const startY = currentMapSize / 2;
-
-      playerSnake.emoji = EMOJI_SKINS[selectedSkinIndex];
-      playerSnake.color = BODY_COLORS[selectedSkinIndex % BODY_COLORS.length];
-      playerSnake.body = [];
-      playerSnake.length = 15;
-      playerSnake.radius = 14;
-
-      for (let i = 0; i < playerSnake.length; i++) {
-        playerSnake.body.push({ x: startX, y: startY + i * 5 });
-      }
-
-      foods = [];
-      for (let i = 0; i < FOOD_COUNT; i++) foods.push(generateFood());
-
-      powerups = [
-        { x: startX + 200, y: startY + 200, type: 'magnet', icon: '🧲' }
-      ];
-
-      botSnakes = [];
-      for (let i = 0; i < BOT_COUNT; i++) botSnakes.push(generateBotSnake(i + 1));
-    }
-
-    function generateFood(x, y) {
-      const foodItem = FOOD_ITEMS[Math.floor(Math.random() * FOOD_ITEMS.length)];
-      return {
-        x: x || Math.random() * (currentMapSize - 100) + 50,
-        y: y || Math.random() * (currentMapSize - 100) + 50,
-        icon: foodItem,
-        radius: 12
-      };
-    }
-
-    function generateBotSnake(id) {
-      const startX = Math.random() * (currentMapSize - 200) + 100;
-      const startY = Math.random() * (currentMapSize - 200) + 100;
-      const length = Math.floor(Math.random() * 25) + 12;
-      const skinIndex = Math.floor(Math.random() * EMOJI_SKINS.length);
-      
-      let body = [];
-      for (let i = 0; i < length; i++) {
-        body.push({ x: startX, y: startY + i * 5 });
-      }
-
-      return {
-        name: `لاعب ${id}`,
-        body: body,
-        length: length,
-        radius: 13,
-        emoji: EMOJI_SKINS[skinIndex],
-        color: BODY_COLORS[skinIndex % BODY_COLORS.length],
-        angle: Math.random() * Math.PI * 2
-      };
-    }
-
-    function activateRageMode() {
-      if (rageEnergy >= 100 && !isRageActive) {
-        isRageActive = true;
-        rageTimer = 300; // 5 ثواني قوة مفرطة
-        rageEnergy = 0;
-        document.getElementById('rage-btn').style.display = 'none';
-      }
-    }
-
-    function startGame() {
-      document.getElementById('startScreen').classList.add('hidden');
-      document.getElementById('gameOverScreen').classList.add('hidden');
-      initGame();
-      isPlaying = true;
-    }
-
-    function gameOver(reason) {
-      isPlaying = false;
-      document.getElementById('deathReason').innerText = reason || 'انتهت اللعبة!';
-      document.getElementById('finalScore').innerText = Math.floor(playerSnake.length);
-      document.getElementById('gameOverScreen').classList.remove('hidden');
-    }
-
-    function explodeSnake(snake) {
-      snake.body.forEach(pt => {
-        if (Math.random() < 0.7) {
-          foods.push(generateFood(
-            pt.x + (Math.random() - 0.5) * 30, 
-            pt.y + (Math.random() - 0.5) * 30
-          ));
-        }
-      });
-    }
-
-    function update() {
-      if (!isPlaying) return;
-
-      // انكماش الباتل رويال التدريجي
-      if (currentMapSize > 1500) {
-        currentMapSize -= 0.05;
-      }
-
-      let speed = 2.2;
-
-      // القوة الخارقة الشاحنة
-      if (isRageActive) {
-        speed = 4.8;
-        rageTimer--;
-        if (rageTimer <= 0) isRageActive = false;
-      } else if (isBoosting && playerSnake.length > 10) {
-        speed = 4.0;
-        playerSnake.length -= 0.08;
-      }
-
-      const head = { ...playerSnake.body[0] };
-      const targetX = head.x + (mouse.x - canvas.width / 2);
-      const targetY = head.y + (mouse.y - canvas.height / 2);
-
-      const dx = targetX - head.x;
-      const dy = targetY - head.y;
-      const dist = Math.hypot(dx, dy);
-
-      if (dist > 3) {
-        head.x += (dx / dist) * speed;
-        head.y += (dy / dist) * speed;
-      }
-
-      // الاصطدام بالحدود الخارجيّة
-      if (
-        head.x <= playerSnake.radius || 
-        head.x >= currentMapSize - playerSnake.radius || 
-        head.y <= playerSnake.radius || 
-        head.y >= currentMapSize - playerSnake.radius
-      ) {
-        if (!isRageActive) {
-          explodeSnake(playerSnake);
-          gameOver('اصطدمت بالحدود الحمراء! 🛑');
-          return;
-        }
-      }
-
-      playerSnake.body.unshift(head);
-      while (playerSnake.body.length > playerSnake.length) {
-        playerSnake.body.pop();
-      }
-
-      // جلب الطعام بالمغناطيس
-      if (magnetTimer > 0) {
-        magnetTimer--;
-      }
-
-      foods.forEach((food, index) => {
-        const d = Math.hypot(head.x - food.x, head.y - food.y);
-
-        // سحب الطعام بالمغناطيس
-        if (magnetTimer > 0 && d < 220) {
-          food.x += (head.x - food.x) * 0.1;
-          food.y += (head.y - food.y) * 0.1;
-        }
-
-        if (d < playerSnake.radius + food.radius) {
-          playerSnake.length += 1.2;
-          if (rageEnergy < 100) {
-            rageEnergy += 2;
-            if (rageEnergy >= 100) {
-              document.getElementById('rage-btn').style.display = 'block';
-            }
-          }
-          foods.splice(index, 1);
-          foods.push(generateFood());
-        }
-      });
-
-      // التقاط المغناطيس
-      powerups.forEach((p, index) => {
-        const d = Math.hypot(head.x - p.x, head.y - p.y);
-        if (d < playerSnake.radius + 15) {
-          magnetTimer = 350; // تفعيل المغناطيس
-          powerups.splice(index, 1);
-        }
-      });
-
-      botSnakes.forEach((bot, botIndex) => {
-        let botHead = { ...bot.body[0] };
-        
-        if (Math.random() < 0.04) {
-          bot.angle += (Math.random() - 0.5) * 1.5;
-        }
-
-        botHead.x += Math.cos(bot.angle) * 1.9;
-        botHead.y += Math.sin(bot.angle) * 1.9;
-
-        if (botHead.x < 50 || botHead.x > currentMapSize - 50) bot.angle = Math.PI - bot.angle;
-        if (botHead.y < 50 || botHead.y > currentMapSize - 50) bot.angle = -bot.angle;
-
-        bot.body.unshift(botHead);
-        while (bot.body.length > bot.length) {
-          bot.body.pop();
-        }
-
-        const d = Math.hypot(head.x - botHead.x, head.y - botHead.y);
-        if (d < playerSnake.radius + bot.radius) {
-          if (isRageActive || playerSnake.length >= bot.length) {
-            explodeSnake(bot);
-            playerSnake.length += bot.length * 0.4;
-            botSnakes[botIndex] = generateBotSnake(botIndex + 1);
-          } else {
-            explodeSnake(playerSnake);
-            gameOver('اصطدمت بثعبان أكبر منك! 🐍💥');
-          }
-        }
-      });
-
-      document.getElementById('score').innerText = Math.floor(playerSnake.length);
-      document.getElementById('rage-percent').innerText = `${Math.min(100, Math.floor(rageEnergy))}%`;
-      document.getElementById('rage-bar').style.width = `${Math.min(100, rageEnergy)}%`;
-
-      updateLeaderboard();
-    }
-
-    function updateLeaderboard() {
-      let allSnakes = [
-        { name: playerSnake.name, length: Math.floor(playerSnake.length) },
-        ...botSnakes.map(b => ({ name: b.name, length: Math.floor(b.length) }))
-      ];
-
-      allSnakes.sort((a, b) => b.length - a.length);
-
-      const lbList = document.getElementById('lb-list');
-      lbList.innerHTML = '';
-      allSnakes.slice(0, 5).forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'lb-item';
-        div.style.color = item.name === playerSnake.name ? '#38bdf8' : '#fff';
-        const title = index === 0 ? '👑' : '';
-        div.innerHTML = `<span>${index + 1}. ${item.name} ${title}</span><span>${item.length}</span>`;
-        lbList.appendChild(div);
-      });
-    }
-
-    function drawSnake(ctx, snake, isPlayer) {
-      if (!snake.body || snake.body.length === 0) return;
-
-      // أثر ناري أثناء تفعيل الغضب الخارق
-      if (isPlayer && isRageActive) {
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 20;
-      }
-
-      for (let i = snake.body.length - 1; i >= 1; i--) {
-        const pt = snake.body[i];
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, snake.radius, 0, Math.PI * 2);
-        ctx.fillStyle = snake.color;
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-
-      ctx.shadowBlur = 0;
-
-      const head = snake.body[0];
-      const next = snake.body[1] || head;
-      const angle = Math.atan2(head.y - next.y, head.x - next.x);
-
-      ctx.save();
-      ctx.translate(head.x, head.y);
-      ctx.rotate(angle + Math.PI / 2);
-
-      ctx.font = `${snake.radius * 2.2}px Segoe UI Emoji, Apple Color Emoji`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(snake.emoji, 0, 0);
-
-      ctx.restore();
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (!playerSnake.body[0]) return;
-
-      const head = playerSnake.body[0];
-      const zoom = Math.max(0.6, 1 - playerSnake.length * 0.001);
-
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.scale(zoom, zoom);
-      ctx.translate(-head.x, -head.y);
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
-      ctx.lineWidth = 1.5;
-      const gridSize = 80;
-      for (let x = 0; x < currentMapSize; x += gridSize) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, currentMapSize); ctx.stroke();
-      }
-      for (let y = 0; y < currentMapSize; y += gridSize) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(currentMapSize, y); ctx.stroke();
-      }
-
-      // حدود الماب الحمراء الانكماشية
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 10;
-      ctx.strokeRect(0, 0, currentMapSize, currentMapSize);
-
-      // رسم المأكولات الضخمة المتنوعة
-      foods.forEach(food => {
-        ctx.font = '20px Segoe UI Emoji, Apple Color Emoji';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(food.icon, food.x, food.y);
-      });
-
-      // رسم المكافآت والمغناطيس
-      powerups.forEach(p => {
-        ctx.font = '28px Segoe UI Emoji';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(p.icon, p.x, p.y);
-      });
-
-      botSnakes.forEach(bot => drawSnake(ctx, bot, false));
-      if (isPlaying) drawSnake(ctx, playerSnake, true);
-
-      ctx.restore();
-    }
-
-    function gameLoop() {
-      update();
-      draw();
-      requestAnimationFrame(gameLoop);
-    }
-
-    gameLoop();
-  </script>
-</body>
-</html>
+    let
