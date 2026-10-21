@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>عبده.io - النسخة الأسطورية الشاملة 👑</title>
+  <title>عبده.io - النسخة الأسطورية المحدثة 👑</title>
   <style>
     * {
       box-sizing: border-box;
@@ -74,7 +74,7 @@
     #leaderboard {
       top: 15px;
       left: 15px;
-      min-width: 190px;
+      min-width: 200px;
     }
 
     #leaderboard h3 {
@@ -89,7 +89,7 @@
     .lb-item {
       display: flex;
       justify-content: space-between;
-      font-size: 13px;
+      font-size: 12px;
       margin-bottom: 5px;
       font-weight: 600;
     }
@@ -205,6 +205,11 @@
       font-size: 9px;
       color: #94a3b8;
       margin-top: 2px;
+    }
+
+    .skin-item:hover {
+      transform: scale(1.08);
+      background: rgba(255, 255, 255, 0.15);
     }
 
     .skin-item.active {
@@ -361,7 +366,7 @@
       } catch (e) {}
     }
 
-    // --- إعدادات الكانفاس ---
+    // --- إعدادات الكانفاس واللعبة ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d', { alpha: false });
     const minimapCanvas = document.getElementById('minimap');
@@ -405,7 +410,7 @@
     let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
     const MAP_SIZE = 2800;
     const FOOD_COUNT = 220;
-    const TOTAL_BOTS = 24; // 24 بوت + اللاعب = 25 ثعباناً
+    const TOTAL_BOTS = 24;
 
     let particles = [];
     let foods = [];
@@ -421,6 +426,7 @@
       radius: 14,
       skin: FULL_SKINS[0],
       boostEnergy: 100,
+      kills: 0,
       buffs: { magnet: 0, shield: 0, double: 0 }
     };
 
@@ -501,7 +507,8 @@
         radius: 14,
         skin: skin,
         angle: Math.random() * Math.PI * 2,
-        changeDirTimer: 0
+        changeDirTimer: 0,
+        kills: 0
       };
     }
 
@@ -534,6 +541,7 @@
       playerSnake.length = 15;
       playerSnake.radius = 14;
       playerSnake.boostEnergy = 100;
+      playerSnake.kills = 0;
       playerSnake.buffs = { magnet: 0, shield: 0, double: 0 };
 
       for (let i = 0; i < playerSnake.length; i++) {
@@ -584,9 +592,12 @@
       document.getElementById('gameOverScreen').classList.remove('hidden');
     }
 
-    function explodeSnake(snake) {
+    function explodeSnake(snake, killer = null) {
       playSound('explode');
       snake.isAlive = false;
+      if (killer) {
+        killer.kills = (killer.kills || 0) + 1;
+      }
       snake.body.forEach((pt, index) => {
         if (index % 2 === 0) {
           foods.push(generateFood(pt.x + (Math.random() - 0.5) * 30, pt.y + (Math.random() - 0.5) * 30));
@@ -687,7 +698,7 @@
         }
       }
 
-      // ذكاء اصطناعي ذكي وقوي للبوتات
+      // ذكاء البوتات
       aliveBots.forEach((bot) => {
         let botHead = { ...bot.body[0] };
 
@@ -744,7 +755,7 @@
 
           for (let k = 0; k < playerSnake.body.length; k++) {
             if (distSq(botHead.x, botHead.y, playerSnake.body[k].x, playerSnake.body[k].y) < hitR2) {
-              explodeSnake(bot);
+              explodeSnake(bot, playerSnake);
               playerSnake.length += bot.length * 0.35;
               break;
             }
@@ -759,9 +770,9 @@
           for (let k = 0; k < bot.body.length; k++) {
             if (distSq(head.x, head.y, bot.body[k].x, bot.body[k].y) < hitR2) {
               if (playerSnake.buffs.shield > 0) {
-                explodeSnake(bot);
+                explodeSnake(bot, playerSnake);
               } else {
-                explodeSnake(playerSnake);
+                explodeSnake(playerSnake, bot);
                 gameOver(false, 'اصطدمت بثعبان منافس! 💥');
               }
               break;
@@ -775,7 +786,7 @@
             const hitR2 = hitRadius * hitRadius;
             for (let k = 0; k < otherBot.body.length; k += 2) {
               if (distSq(botHead.x, botHead.y, otherBot.body[k].x, otherBot.body[k].y) < hitR2) {
-                explodeSnake(bot);
+                explodeSnake(bot, otherBot);
                 otherBot.length += bot.length * 0.3;
                 break;
               }
@@ -804,15 +815,21 @@
       updateLeaderboard();
     }
 
+    // --- قاعدة ترتيب المتصدرين مع كسر التعادل (الطول ثم عدد القتلات) ---
     function updateLeaderboard() {
       let allSnakes = [];
-      if (playerSnake.isAlive) allSnakes.push({ id: playerSnake.id, name: playerSnake.name, length: Math.floor(playerSnake.length) });
+      if (playerSnake.isAlive) allSnakes.push({ id: playerSnake.id, name: playerSnake.name, length: Math.floor(playerSnake.length), kills: playerSnake.kills || 0 });
       
       botSnakes.forEach(b => {
-        if (b.isAlive) allSnakes.push({ id: b.id, name: b.name, length: Math.floor(b.length) });
+        if (b.isAlive) allSnakes.push({ id: b.id, name: b.name, length: Math.floor(b.length), kills: b.kills || 0 });
       });
 
-      allSnakes.sort((a, b) => b.length - a.length);
+      allSnakes.sort((a, b) => {
+        if (b.length !== a.length) {
+          return b.length - a.length; // 1. الترتيب الأساسي بالطول
+        }
+        return b.kills - a.kills; // 2. فسر التعادل بعدد القتلات لو تساوو في النقاط
+      });
 
       const lbList = document.getElementById('lb-list');
       lbList.innerHTML = '';
@@ -825,6 +842,7 @@
       });
     }
 
+    // --- رسم الثعبان مع المسار المتصل لمنع أي انفصال بين الأجزاء ---
     function drawSnake(ctx, snake, isKing = false) {
       if (!snake.isAlive || !snake.body || snake.body.length === 0) return;
 
@@ -839,6 +857,21 @@
         ctx.stroke();
       }
 
+      // رسم مسار الجسم المتصل بالكامل لضمان عدم وجود فراغات
+      if (snake.body.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(snake.body[0].x, snake.body[0].y);
+        for (let i = 1; i < snake.body.length; i++) {
+          ctx.lineTo(snake.body[i].x, snake.body[i].y);
+        }
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = snake.radius * 2;
+        ctx.strokeStyle = snake.skin.colors[0];
+        ctx.stroke();
+      }
+
+      // رسم الدوائر فوق المسار
       for (let i = snake.body.length - 1; i >= 1; i--) {
         const pt = snake.body[i];
         const colorIndex = i % snake.skin.colors.length;
@@ -977,7 +1010,10 @@
       let allSnakes = [];
       if (playerSnake.isAlive) allSnakes.push(playerSnake);
       botSnakes.forEach(b => { if (b.isAlive) allSnakes.push(b); });
-      allSnakes.sort((a, b) => b.length - a.length);
+      allSnakes.sort((a, b) => {
+        if (b.length !== a.length) return b.length - a.length;
+        return (b.kills || 0) - (a.kills || 0);
+      });
       const kingSnake = allSnakes[0];
 
       botSnakes.forEach(bot => drawSnake(ctx, bot, kingSnake && kingSnake.id === bot.id));
