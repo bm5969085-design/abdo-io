@@ -194,4 +194,735 @@
       transform: scale(1.1);
     }
 
-    .pagination
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .page-btn {
+      background: #334155;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .page-btn.active {
+      background: #0284c7;
+      box-shadow: 0 0 10px rgba(2, 132, 199, 0.5);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #0284c7, #4f46e5);
+      color: white;
+      border: none;
+      padding: 16px 48px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 6px 30px rgba(79, 70, 229, 0.5);
+      transition: all 0.25s ease;
+      letter-spacing: 0.5px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 10px 35px rgba(79, 70, 229, 0.7);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* أزرار التحكم بالموبايل */
+    #mobileBoostBtn {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #f59e0b, #d97706);
+      color: white;
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.6);
+      z-index: 8;
+      touch-action: manipulation;
+      border: 3px solid rgba(255,255,255,0.4);
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      #mobileBoostBtn { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="ui" class="hud-panel">
+    <div class="stat-row">
+      <span>الطول:</span>
+      <span id="score" style="color: #38bdf8;">15</span>
+    </div>
+    <div class="stat-row">
+      <span>التعزيز:</span>
+      <span id="boostText" style="color: #f59e0b;">100%</span>
+    </div>
+    <div class="boost-bar-container">
+      <div id="boostBar" class="boost-bar-fill"></div>
+    </div>
+    <div id="activeBuffs" style="font-size: 12px; color: #a855f7; margin-top:2px;"></div>
+  </div>
+
+  <div id="leaderboard" class="hud-panel">
+    <h3>🏆 أساطير الساحة</h3>
+    <div id="lb-list"></div>
+  </div>
+
+  <div id="minimapContainer">
+    <canvas id="minimap"></canvas>
+  </div>
+
+  <div id="startScreen" class="overlay">
+    <h1>عبده.io 🚀</h1>
+    <p>اختر مظهرك الأسطوري واغزو الساحة!</p>
+    
+    <div class="skins-wrapper">
+      <div class="skins-grid" id="skinsGrid"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+    <button class="btn" onclick="startGame()">انطلق للقتال 🔥</button>
+  </div>
+
+  <div id="gameOverScreen" class="overlay hidden">
+    <h1 style="background: linear-gradient(135deg, #ef4444, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent;" id="deathReason">انتهت الجولة! 💥</h1>
+    <p>النتيجة النهائية والطول: <span id="finalScore" style="color: #38bdf8; font-weight: bold;">0</span></p>
+    <button class="btn" onclick="startGame()">العب مرة أخرى 🔄</button>
+  </div>
+
+  <div id="mobileBoostBtn">⚡</div>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <script>
+    // --- الصوت الديناميكي (Web Audio API) ---
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioCtx();
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'eat') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'powerup') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.exponentialRampToValueAtTime(1200, now + 0.25);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'explode') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, now);
+          osc.frequency.linearRampToValueAtTime(40, now + 0.3);
+          gain.gain.setValueAtTime(0.4, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        }
+      } catch (e) {}
+    }
+
+    // --- إعدادات الكانفاس واللعبة ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const minimapCanvas = document.getElementById('minimap');
+    const miniCtx = minimapCanvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      minimapCanvas.width = 120;
+      minimapCanvas.height = 120;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // العناصر والمظاهر
+    const FOOD_ITEMS = ['🍔','🍕','🌭','🍟','🥪','🌮','🌯','🍗','🍩','🍪','🍏','🍎','🍊','🍌','🍉','🍇','🍓','🍒','🍍'];
+    const POWERUP_TYPES = [
+      { type: 'magnet', icon: '🧲', color: '#38bdf8', label: 'جذب الطعام' },
+      { type: 'shield', icon: '🛡️', color: '#a855f7', label: 'درع حماية' },
+      { type: 'double', icon: '⚡', color: '#eab308', label: 'مضاعفة x2' }
+    ];
+
+    const EMOJI_SKINS = ['🐍','🐉','🐲','🦁','🐯','🦊','🦝','🐻','🐼','🐰','🐱','🐶','🐺','🤖','👽','👻','💀','👹','👿','🎃','💩','👾','🛸','🚀','🦅','🦈','🐊'];
+    const BODY_COLORS = ['#38bdf8', '#22c55e', '#a855f7', '#eab308', '#f43f5e', '#f97316', '#06b6d4', '#ec4899'];
+
+    let selectedSkinIndex = 0;
+    let currentPage = 0;
+    const itemsPerPage = 18;
+
+    let isBoosting = false;
+    let isPlaying = false;
+
+    let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+    const MAP_SIZE = 3000;
+    const FOOD_COUNT = 300;
+    const BOT_COUNT = 14;
+
+    let particles = [];
+    let foods = [];
+    let powerups = [];
+    let botSnakes = [];
+
+    let playerSnake = {
+      name: 'عبده الأسطوري',
+      body: [],
+      length: 15,
+      radius: 14,
+      emoji: EMOJI_SKINS[0],
+      color: BODY_COLORS[0],
+      boostEnergy: 100,
+      buffs: { magnet: 0, shield: 0, double: 0 }
+    };
+
+    // --- واجهة المظاهر والصفحات ---
+    function renderSkinsPage(page) {
+      currentPage = page;
+      const grid = document.getElementById('skinsGrid');
+      grid.innerHTML = '';
+      
+      const start = page * itemsPerPage;
+      const end = Math.min(start + itemsPerPage, EMOJI_SKINS.length);
+
+      for (let i = start; i < end; i++) {
+        const item = document.createElement('div');
+        item.className = `skin-item ${i === selectedSkinIndex ? 'active' : ''}`;
+        item.innerText = EMOJI_SKINS[i];
+        item.onclick = () => {
+          selectedSkinIndex = i;
+          renderSkinsPage(currentPage);
+        };
+        grid.appendChild(item);
+      }
+
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
+      const totalPages = Math.ceil(EMOJI_SKINS.length / itemsPerPage);
+
+      for (let p = 0; p < totalPages; p++) {
+        const pBtn = document.createElement('button');
+        pBtn.className = `page-btn ${p === currentPage ? 'active' : ''}`;
+        pBtn.innerText = p + 1;
+        pBtn.onclick = () => renderSkinsPage(p);
+        pagination.appendChild(pBtn);
+      }
+    }
+    renderSkinsPage(0);
+
+    // --- أحداث التحكم ---
+    window.addEventListener('mousedown', () => isBoosting = true);
+    window.addEventListener('mouseup', () => isBoosting = false);
+    
+    const boostBtn = document.getElementById('mobileBoostBtn');
+    boostBtn.addEventListener('touchstart', (e) => { e.preventDefault(); isBoosting = true; });
+    boostBtn.addEventListener('touchend', (e) => { e.preventDefault(); isBoosting = false; });
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        mouse.x = e.touches[0].clientX;
+        mouse.y = e.touches[0].clientY;
+      }
+    });
+
+    // --- توليد الكائنات ---
+    function generateFood(x, y) {
+      return {
+        x: x || Math.random() * (MAP_SIZE - 120) + 60,
+        y: y || Math.random() * (MAP_SIZE - 120) + 60,
+        icon: FOOD_ITEMS[Math.floor(Math.random() * FOOD_ITEMS.length)],
+        radius: 10,
+        pulse: Math.random() * Math.PI * 2
+      };
+    }
+
+    function generatePowerup() {
+      const p = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+      return {
+        x: Math.random() * (MAP_SIZE - 200) + 100,
+        y: Math.random() * (MAP_SIZE - 200) + 100,
+        type: p.type,
+        icon: p.icon,
+        color: p.color,
+        label: p.label,
+        radius: 16
+      };
+    }
+
+    function generateBotSnake(id) {
+      const startX = Math.random() * (MAP_SIZE - 300) + 150;
+      const startY = Math.random() * (MAP_SIZE - 300) + 150;
+      const length = Math.floor(Math.random() * 25) + 12;
+      const skinIndex = Math.floor(Math.random() * EMOJI_SKINS.length);
+      
+      let body = [];
+      for (let i = 0; i < length; i++) {
+        body.push({ x: startX, y: startY + i * 5 });
+      }
+
+      return {
+        id: `bot_${id}`,
+        name: `مبتدئ ${id}`,
+        body: body,
+        length: length,
+        radius: 14,
+        emoji: EMOJI_SKINS[skinIndex],
+        color: BODY_COLORS[skinIndex % BODY_COLORS.length],
+        angle: Math.random() * Math.PI * 2,
+        changeDirTimer: 0
+      };
+    }
+
+    function createExplosion(x, y, color, count = 12) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 5 + 2;
+        particles.push({
+          x: x, y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: Math.random() * 4 + 2,
+          color: color,
+          alpha: 1,
+          life: 1
+        });
+      }
+    }
+
+    // --- بدء وتحديث اللعبة ---
+    function initGame() {
+      initAudio();
+      const startX = MAP_SIZE / 2;
+      const startY = MAP_SIZE / 2;
+
+      playerSnake.emoji = EMOJI_SKINS[selectedSkinIndex];
+      playerSnake.color = BODY_COLORS[selectedSkinIndex % BODY_COLORS.length];
+      playerSnake.body = [];
+      playerSnake.length = 15;
+      playerSnake.radius = 14;
+      playerSnake.boostEnergy = 100;
+      playerSnake.buffs = { magnet: 0, shield: 0, double: 0 };
+
+      for (let i = 0; i < playerSnake.length; i++) {
+        playerSnake.body.push({ x: startX, y: startY + i * 5 });
+      }
+
+      foods = [];
+      for (let i = 0; i < FOOD_COUNT; i++) foods.push(generateFood());
+
+      powerups = [];
+      for (let i = 0; i < 5; i++) powerups.push(generatePowerup());
+
+      botSnakes = [];
+      for (let i = 0; i < BOT_COUNT; i++) botSnakes.push(generateBotSnake(i + 1));
+
+      particles = [];
+    }
+
+    function startGame() {
+      document.getElementById('startScreen').classList.add('hidden');
+      document.getElementById('gameOverScreen').classList.add('hidden');
+      initGame();
+      isPlaying = true;
+    }
+
+    function gameOver(reason) {
+      isPlaying = false;
+      playSound('explode');
+      document.getElementById('deathReason').innerText = reason || 'انتهت الجولة!';
+      document.getElementById('finalScore').innerText = Math.floor(playerSnake.length);
+      document.getElementById('gameOverScreen').classList.remove('hidden');
+    }
+
+    function explodeSnake(snake) {
+      playSound('explode');
+      snake.body.forEach((pt, index) => {
+        if (index % 2 === 0) {
+          foods.push(generateFood(pt.x + (Math.random() - 0.5) * 30, pt.y + (Math.random() - 0.5) * 30));
+        }
+        createExplosion(pt.x, pt.y, snake.color, 4);
+      });
+    }
+
+    function update() {
+      if (!isPlaying) return;
+
+      // تحديث قدرات وتأثيرات الثعبان (Buffs)
+      if (playerSnake.buffs.magnet > 0) playerSnake.buffs.magnet--;
+      if (playerSnake.buffs.shield > 0) playerSnake.buffs.shield--;
+      if (playerSnake.buffs.double > 0) playerSnake.buffs.double--;
+
+      // الاندفاع والسرعة
+      let activeBoost = isBoosting && playerSnake.boostEnergy > 5;
+      let speed = activeBoost ? 4.2 : 2.4;
+
+      if (activeBoost) {
+        playerSnake.boostEnergy = Math.max(0, playerSnake.boostEnergy - 0.6);
+        if (Math.random() < 0.4) {
+          const tail = playerSnake.body[playerSnake.body.length - 1];
+          particles.push({
+            x: tail.x, y: tail.y,
+            vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2,
+            radius: 3, color: '#f59e0b', alpha: 0.8, life: 0.6
+          });
+        }
+      } else {
+        playerSnake.boostEnergy = Math.min(100, playerSnake.boostEnergy + 0.25);
+      }
+
+      const head = { ...playerSnake.body[0] };
+      const targetX = head.x + (mouse.x - canvas.width / 2);
+      const targetY = head.y + (mouse.y - canvas.height / 2);
+
+      const dx = targetX - head.x;
+      const dy = targetY - head.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > 3) {
+        head.x += (dx / dist) * speed;
+        head.y += (dy / dist) * speed;
+      }
+
+      // الاصطدام بالجدران
+      if (head.x <= playerSnake.radius || head.x >= MAP_SIZE - playerSnake.radius || head.y <= playerSnake.radius || head.y >= MAP_SIZE - playerSnake.radius) {
+        if (playerSnake.buffs.shield <= 0) {
+          explodeSnake(playerSnake);
+          gameOver('اصطدمت بالحدود الخارجية! 🛑');
+          return;
+        } else {
+          head.x = Math.max(playerSnake.radius + 10, Math.min(MAP_SIZE - playerSnake.radius - 10, head.x));
+          head.y = Math.max(playerSnake.radius + 10, Math.min(MAP_SIZE - playerSnake.radius - 10, head.y));
+        }
+      }
+
+      playerSnake.body.unshift(head);
+      while (playerSnake.body.length > playerSnake.length) playerSnake.body.pop();
+
+      // --- أكل الطعام (معدل ومستقر 100% بتكرار عكسي واستبدال مباشر) ---
+      for (let i = foods.length - 1; i >= 0; i--) {
+        const food = foods[i];
+        let foodDist = Math.hypot(head.x - food.x, head.y - food.y);
+
+        // قدرة المغناطيس
+        if (playerSnake.buffs.magnet > 0 && foodDist < 250) {
+          food.x += (head.x - food.x) * 0.1;
+          food.y += (head.y - food.y) * 0.1;
+        }
+
+        if (foodDist < playerSnake.radius + food.radius) {
+          let gain = playerSnake.buffs.double > 0 ? 2.4 : 1.2;
+          playerSnake.length += gain;
+          playSound('eat');
+          createExplosion(food.x, food.y, '#22c55e', 5);
+          foods[i] = generateFood(); // استبدال مباشر بنفس الموقع أسرع وأمن
+        }
+      }
+
+      // --- أكل قدرات الـ Power-ups (تكرار عكسي آمن) ---
+      for (let i = powerups.length - 1; i >= 0; i--) {
+        const p = powerups[i];
+        const d = Math.hypot(head.x - p.x, head.y - p.y);
+        if (d < playerSnake.radius + p.radius) {
+          playSound('powerup');
+          playerSnake.buffs[p.type] = 350; // مدة التأثير
+          createExplosion(p.x, p.y, p.color, 15);
+          powerups.splice(i, 1);
+          setTimeout(() => powerups.push(generatePowerup()), 10000);
+        }
+      }
+
+      // تحريك البوتات بذكاء
+      botSnakes.forEach((bot, botIndex) => {
+        let botHead = { ...bot.body[0] };
+
+        bot.changeDirTimer--;
+        if (bot.changeDirTimer <= 0) {
+          bot.angle += (Math.random() - 0.5) * 1.8;
+          bot.changeDirTimer = Math.floor(Math.random() * 40) + 20;
+        }
+
+        // تفادي الحدود للبوتات
+        if (botHead.x < 150) bot.angle = 0;
+        if (botHead.x > MAP_SIZE - 150) bot.angle = Math.PI;
+        if (botHead.y < 150) bot.angle = Math.PI / 2;
+        if (botHead.y > MAP_SIZE - 150) bot.angle = -Math.PI / 2;
+
+        botHead.x += Math.cos(bot.angle) * 2.0;
+        botHead.y += Math.sin(bot.angle) * 2.0;
+
+        bot.body.unshift(botHead);
+        while (bot.body.length > bot.length) bot.body.pop();
+
+        // 1. تصادم البوتات بك: إذا اصطدم البوت بجسمك -> يموت البوت
+        playerSnake.body.forEach(segment => {
+          const d = Math.hypot(botHead.x - segment.x, botHead.y - segment.y);
+          if (d < bot.radius + playerSnake.radius * 0.7) {
+            explodeSnake(bot);
+            playerSnake.length += bot.length * 0.35;
+            botSnakes[botIndex] = generateBotSnake(botIndex + 1);
+          }
+        });
+
+        // 2. تصادمك بالبوتات: إذا اصطدم رأسك بجسم البوت -> تموت أنت (إلا لو معاك درع)
+        bot.body.forEach(segment => {
+          const d = Math.hypot(head.x - segment.x, head.y - segment.y);
+          if (d < playerSnake.radius + bot.radius * 0.7) {
+            if (playerSnake.buffs.shield > 0) {
+              explodeSnake(bot);
+              botSnakes[botIndex] = generateBotSnake(botIndex + 1);
+            } else {
+              explodeSnake(playerSnake);
+              gameOver('اصطدم رأسك بثعبان آلي! 💥');
+            }
+          }
+        });
+      });
+
+      // تحديث الجسيمات
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.02;
+        if (p.alpha <= 0) particles.splice(i, 1);
+      }
+
+      // تحديث واجهة النصوص
+      document.getElementById('score').innerText = Math.floor(playerSnake.length);
+      document.getElementById('boostBar').style.width = `${playerSnake.boostEnergy}%`;
+      document.getElementById('boostText').innerText = `${Math.floor(playerSnake.boostEnergy)}%`;
+
+      let buffsText = [];
+      if (playerSnake.buffs.magnet > 0) buffsText.push('🧲 مغناطيس');
+      if (playerSnake.buffs.shield > 0) buffsText.push('🛡️ درع حماية');
+      if (playerSnake.buffs.double > 0) buffsText.push('⚡ مضاعفة x2');
+      document.getElementById('activeBuffs').innerText = buffsText.join(' | ');
+
+      updateLeaderboard();
+    }
+
+    function updateLeaderboard() {
+      let allSnakes = [
+        { name: playerSnake.name, length: Math.floor(playerSnake.length) },
+        ...botSnakes.map(b => ({ name: b.name, length: Math.floor(b.length) }))
+      ];
+
+      allSnakes.sort((a, b) => b.length - a.length);
+
+      const lbList = document.getElementById('lb-list');
+      lbList.innerHTML = '';
+      allSnakes.slice(0, 5).forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'lb-item';
+        div.style.color = item.name === playerSnake.name ? '#38bdf8' : '#fff';
+        div.innerHTML = `<span>${index + 1}. ${item.name}</span><span>${item.length}</span>`;
+        lbList.appendChild(div);
+      });
+    }
+
+    function drawSnake(ctx, snake, isPlayer = false) {
+      if (!snake.body || snake.body.length === 0) return;
+
+      // رسم هالة الدرع
+      if (isPlayer && playerSnake.buffs.shield > 0) {
+        const head = snake.body[0];
+        ctx.beginPath();
+        ctx.arc(head.x, head.y, snake.radius * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(168, 85, 247, 0.25)';
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 3;
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // رسم أجزاء الجسم
+      for (let i = snake.body.length - 1; i >= 1; i--) {
+        const pt = snake.body[i];
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, snake.radius, 0, Math.PI * 2);
+        ctx.fillStyle = snake.color;
+        ctx.shadowColor = snake.color;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      // رسم الرأس والوجه
+      const head = snake.body[0];
+      const next = snake.body[1] || head;
+      const angle = Math.atan2(head.y - next.y, head.x - next.x);
+
+      ctx.save();
+      ctx.translate(head.x, head.y);
+      ctx.rotate(angle + Math.PI / 2);
+
+      ctx.font = `${snake.radius * 2.3}px Segoe UI Emoji, Apple Color Emoji`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(snake.emoji, 0, 0);
+
+      ctx.restore();
+    }
+
+    function drawMinimap() {
+      miniCtx.clearRect(0, 0, 120, 120);
+      const scale = 120 / MAP_SIZE;
+
+      // رسم الأكل المصغر
+      miniCtx.fillStyle = '#22c55e';
+      foods.forEach(f => {
+        miniCtx.fillRect(f.x * scale, f.y * scale, 1.5, 1.5);
+      });
+
+      // رسم البوتات
+      miniCtx.fillStyle = '#ef4444';
+      botSnakes.forEach(b => {
+        if (b.body[0]) miniCtx.fillRect(b.body[0].x * scale, b.body[0].y * scale, 3, 3);
+      });
+
+      // رسم اللاعب
+      if (playerSnake.body[0]) {
+        miniCtx.fillStyle = '#38bdf8';
+        miniCtx.beginPath();
+        miniCtx.arc(playerSnake.body[0].x * scale, playerSnake.body[0].y * scale, 3.5, 0, Math.PI * 2);
+        miniCtx.fill();
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!playerSnake.body[0]) return;
+
+      const head = playerSnake.body[0];
+      const zoom = Math.max(0.55, 1 - playerSnake.length * 0.0008);
+
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.scale(zoom, zoom);
+      ctx.translate(-head.x, -head.y);
+
+      // رسم شبكة الخلفية الأسطورية
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+      ctx.lineWidth = 1.5;
+      const gridSize = 120;
+      for (let x = 0; x < MAP_SIZE; x += gridSize) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, MAP_SIZE); ctx.stroke();
+      }
+      for (let y = 0; y < MAP_SIZE; y += gridSize) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(MAP_SIZE, MAP_SIZE); ctx.stroke();
+      }
+
+      // حدود الخريطة المتحركة النيون
+      ctx.strokeStyle = '#ef4444';
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 15;
+      ctx.lineWidth = 12;
+      ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
+      ctx.shadowBlur = 0;
+
+      // رسم الطعام
+      foods.forEach(food => {
+        food.pulse += 0.05;
+        const scale = 1 + Math.sin(food.pulse) * 0.1;
+        ctx.save();
+        ctx.translate(food.x, food.y);
+        ctx.scale(scale, scale);
+        ctx.font = '18px Segoe UI Emoji';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(food.icon, 0, 0);
+        ctx.restore();
+      });
+
+      // رسم قدرات Power-ups
+      powerups.forEach(p => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius + 4, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + '44';
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2;
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = '20px Segoe UI Emoji';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.icon, p.x, p.y);
+        ctx.restore();
+      });
+
+      // رسم الجسيمات الانفجارية
+      particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        ctx.restore();
+      });
+
+      botSnakes.forEach(bot => drawSnake(ctx, bot));
+      if (isPlaying) drawSnake(ctx, playerSnake, true);
+
+      ctx.restore();
+
+      drawMinimap();
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>
