@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>عبده.io - باتل رويال الأساطير 🏆</title>
+  <title>عبده.io - النسخة الأسطورية المتقدمة 👑</title>
   <style>
     * {
       box-sizing: border-box;
@@ -117,8 +117,8 @@
     .overlay {
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.94) 0%, rgba(3, 7, 18, 0.98) 100%);
-      backdrop-filter: blur(10px);
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.95) 0%, rgba(3, 7, 18, 0.99) 100%);
+      backdrop-filter: blur(12px);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -127,37 +127,63 @@
       text-align: center;
       padding: 20px;
       z-index: 10;
+      overflow-y: auto;
     }
 
     .overlay h1 {
-      font-size: 3rem;
-      margin-bottom: 8px;
+      font-size: 2.8rem;
+      margin-bottom: 6px;
       background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
     .overlay p {
-      font-size: 1.1rem;
+      font-size: 1rem;
       color: #94a3b8;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
+    }
+
+    /* صندوق إدخال الاسم المخصص */
+    .input-group {
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 15px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px 20px;
+      background: rgba(30, 41, 59, 0.8);
+      border: 2px solid rgba(56, 189, 248, 0.3);
+      border-radius: 14px;
+      color: white;
+      font-size: 1.1rem;
+      text-align: center;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .input-group input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
     }
 
     .skins-wrapper {
-      max-width: 500px;
+      max-width: 450px;
       width: 100%;
       background: rgba(30, 41, 59, 0.5);
-      padding: 18px;
+      padding: 15px;
       border-radius: 20px;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      margin-bottom: 22px;
+      margin-bottom: 20px;
     }
 
     .skins-grid {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 10px;
-      max-height: 180px;
+      max-height: 160px;
       overflow-y: auto;
       padding: 4px;
     }
@@ -168,11 +194,18 @@
       border: 2px solid transparent;
       border-radius: 14px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 26px;
+      font-size: 22px;
       cursor: pointer;
       transition: transform 0.2s;
+    }
+
+    .skin-item span {
+      font-size: 9px;
+      color: #94a3b8;
+      margin-top: 2px;
     }
 
     .skin-item:hover {
@@ -185,33 +218,12 @@
       background: rgba(56, 189, 248, 0.25);
     }
 
-    .pagination {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .page-btn {
-      background: #334155;
-      color: white;
-      border: none;
-      padding: 5px 11px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .page-btn.active {
-      background: #0284c7;
-    }
-
     .btn {
       background: linear-gradient(135deg, #0284c7, #4f46e5);
       color: white;
       border: none;
-      padding: 15px 45px;
-      font-size: 1.25rem;
+      padding: 14px 42px;
+      font-size: 1.2rem;
       font-weight: 800;
       border-radius: 50px;
       cursor: pointer;
@@ -284,18 +296,22 @@
 
   <div id="startScreen" class="overlay">
     <h1>عبده.io - باتل رويال 👑</h1>
-    <p>25 ثعباناً سينزلون الساحة... بطل واحد فقط سيبقى حياً!</p>
+    <p>اختر اسمك، تَمَيَّز بمظهرك الكامل، واغزو الساحة!</p>
     
+    <div class="input-group">
+      <input type="text" id="playerNameInput" value="عبد الله الأسطوري" maxlength="15" placeholder="اكتب اسمك هنا...">
+    </div>
+
     <div class="skins-wrapper">
       <div class="skins-grid" id="skinsGrid"></div>
       <div class="pagination" id="pagination"></div>
     </div>
 
-    <button class="btn" onclick="startGame()">ابدأ المعركة 🔥</button>
+    <button class="btn" onclick="startGame()">انطلق للمعركة 🔥</button>
   </div>
 
   <div id="gameOverScreen" class="overlay hidden">
-    <h1 id="endTitle" style="font-size: 3.5rem;">انتهت الجولة! 💥</h1>
+    <h1 id="endTitle" style="font-size: 3.2rem;">انتهت الجولة! 💥</h1>
     <p id="endSubText">النتيجة النهائية والطول: <span id="finalScore" style="color: #38bdf8; font-weight: bold;">0</span></p>
     <button class="btn" onclick="startGame()">العب مرة أخرى 🔄</button>
   </div>
@@ -355,7 +371,7 @@
 
     // --- إعدادات اللعبة والكانفاس ---
     const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d', { alpha: false }); // تحسين أداء الكانفاس
+    const ctx = canvas.getContext('2d', { alpha: false });
     const minimapCanvas = document.getElementById('minimap');
     const miniCtx = minimapCanvas.getContext('2d');
 
@@ -375,13 +391,25 @@
       { type: 'double', icon: '⚡', color: '#eab308' }
     ];
 
-    const EMOJI_SKINS = ['🐍','🐉','🐲','🦁','🐯','🦊','🦝','🐻','🐼','🐰','🐱','🐶','🐺','🤖','👽','👻','💀','👹','👿','🎃','💩','👾','🛸','🚀','🦅','🦈'];
-    const BODY_COLORS = ['#38bdf8', '#22c55e', '#a855f7', '#eab308', '#f43f5e', '#f97316', '#06b6d4', '#ec4899'];
-    const BOT_NAMES = ['صقر الساحة', 'المرعب', 'الشبَح', 'النمر', 'العاصفة', 'المحتاس', 'الفارس', 'النووي', 'ثعبان الليل', 'البيكست', 'الجنرال', 'الساموراي', 'الزعيم', 'الصاروخ', 'الشرس', 'السيّد', 'المفترس', 'الغواص', 'الزلزال', 'الصارم', 'المدمر', 'العملاق', 'الكوبرا', 'الفايكنج'];
+    // --- أشكال الجسم والرأس الكاملة (أنماط الجسم المتنوعة) ---
+    const FULL_SKINS = [
+      { emoji: '🐍', name: 'كوبرا نيون', colors: ['#38bdf8', '#0284c7', '#0369a1'] },
+      { type: 'dragon', emoji: '🐉', name: 'تنين ناري', colors: ['#ef4444', '#f97316', '#eab308'] },
+      { type: 'galaxy', emoji: '🐲', name: 'مجرة كونية', colors: ['#a855f7', '#6366f1', '#38bdf8'] },
+      { type: 'gold', emoji: '🦁', name: 'ذهب ملكي', colors: ['#eab308', '#ca8a04', '#a16207'] },
+      { type: 'tiger', emoji: '🐯', name: 'نمر مفترس', colors: ['#f97316', '#c2410c', '#7c2d12'] },
+      { type: 'cyber', emoji: '🤖', name: 'سايبر بانك', colors: ['#06b6d4', '#3b82f6', '#8b5cf6'] },
+      { type: 'matrix', emoji: '👾', name: 'ماتريكس', colors: ['#22c55e', '#15803d', '#14532d'] },
+      { type: 'ghost', emoji: '👻', name: 'شبح خفي', colors: ['#e2e8f0', '#94a3b8', '#475569'] },
+      { type: 'devil', emoji: '😈', name: 'شيطان ليلى', colors: ['#f43f5e', '#be123c', '#881337'] },
+      { type: 'rocket', emoji: '🚀', name: 'صاروخ فضاء', colors: ['#0284c7', '#0f172a', '#38bdf8'] }
+    ];
+
+    const BOT_NAMES = ['صقر الساحة', 'المرعب', 'الشبَح', 'النمر', 'العاصفة', 'المحتاس', 'الفارس', 'النووي', 'ثعبان الليل', 'البيكسل', 'الجنرال', 'الساموراي', 'الزعيم', 'الصاروخ', 'الشرس', 'السيّد', 'المفترس', 'الغواص', 'الزلزال', 'الصارم', 'المدمر', 'العملاق', 'الكوبرا', 'الفايكنج'];
 
     let selectedSkinIndex = 0;
     let currentPage = 0;
-    const itemsPerPage = 18;
+    const itemsPerPage = 10;
 
     let isBoosting = false;
     let isPlaying = false;
@@ -397,13 +425,12 @@
     let botSnakes = [];
 
     let playerSnake = {
-      name: 'عبده الأسطوري',
+      name: 'عبد الله الأسطوري',
       isAlive: true,
       body: [],
       length: 15,
       radius: 14,
-      emoji: EMOJI_SKINS[0],
-      color: BODY_COLORS[0],
+      skin: FULL_SKINS[0],
       boostEnergy: 100,
       buffs: { magnet: 0, shield: 0, double: 0 }
     };
@@ -414,29 +441,18 @@
       grid.innerHTML = '';
       
       const start = page * itemsPerPage;
-      const end = Math.min(start + itemsPerPage, EMOJI_SKINS.length);
+      const end = Math.min(start + itemsPerPage, FULL_SKINS.length);
 
       for (let i = start; i < end; i++) {
+        const skin = FULL_SKINS[i];
         const item = document.createElement('div');
         item.className = `skin-item ${i === selectedSkinIndex ? 'active' : ''}`;
-        item.innerText = EMOJI_SKINS[i];
+        item.innerHTML = `<div>${skin.emoji}</div><span>${skin.name}</span>`;
         item.onclick = () => {
           selectedSkinIndex = i;
           renderSkinsPage(currentPage);
         };
         grid.appendChild(item);
-      }
-
-      const pagination = document.getElementById('pagination');
-      pagination.innerHTML = '';
-      const totalPages = Math.ceil(EMOJI_SKINS.length / itemsPerPage);
-
-      for (let p = 0; p < totalPages; p++) {
-        const pBtn = document.createElement('button');
-        pBtn.className = `page-btn ${p === currentPage ? 'active' : ''}`;
-        pBtn.innerText = p + 1;
-        pBtn.onclick = () => renderSkinsPage(p);
-        pagination.appendChild(pBtn);
       }
     }
     renderSkinsPage(0);
@@ -486,7 +502,7 @@
       const startX = Math.random() * (MAP_SIZE - 400) + 200;
       const startY = Math.random() * (MAP_SIZE - 400) + 200;
       const length = Math.floor(Math.random() * 20) + 12;
-      const skinIndex = Math.floor(Math.random() * EMOJI_SKINS.length);
+      const skin = FULL_SKINS[Math.floor(Math.random() * FULL_SKINS.length)];
       
       let body = [];
       for (let i = 0; i < length; i++) {
@@ -500,8 +516,7 @@
         body: body,
         length: length,
         radius: 14,
-        emoji: EMOJI_SKINS[skinIndex],
-        color: BODY_COLORS[skinIndex % BODY_COLORS.length],
+        skin: skin,
         angle: Math.random() * Math.PI * 2,
         changeDirTimer: 0,
         isBoosting: false
@@ -509,7 +524,6 @@
     }
 
     function createExplosion(x, y, color, count = 6) {
-      // تقليل عدد الجسيمات للحفاظ على السرعة الفائقة
       for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = Math.random() * 4 + 2;
@@ -526,12 +540,14 @@
 
     function initGame() {
       initAudio();
+      const customName = document.getElementById('playerNameInput').value.trim();
+      playerSnake.name = customName !== '' ? customName : 'عبد الله';
+
       const startX = MAP_SIZE / 2;
       const startY = MAP_SIZE / 2;
 
       playerSnake.isAlive = true;
-      playerSnake.emoji = EMOJI_SKINS[selectedSkinIndex];
-      playerSnake.color = BODY_COLORS[selectedSkinIndex % BODY_COLORS.length];
+      playerSnake.skin = FULL_SKINS[selectedSkinIndex];
       playerSnake.body = [];
       playerSnake.length = 15;
       playerSnake.radius = 14;
@@ -572,7 +588,7 @@
         title.style.background = 'linear-gradient(135deg, #eab308, #38bdf8)';
         title.style.webkitBackgroundClip = 'text';
         title.style.webkitTextFillColor = 'transparent';
-        sub.innerHTML = `عاش يا بطل! قضيت على الجميع وصرت بطل الجولة بطول: <span style="color: #38bdf8">${Math.floor(playerSnake.length)}</span>`;
+        sub.innerHTML = `عاش يا بطل (${playerSnake.name})! قضيت على الجميع وبقيت البطل الأخير بطول: <span style="color: #38bdf8">${Math.floor(playerSnake.length)}</span>`;
       } else {
         playSound('explode');
         title.innerHTML = 'انتهت الجولة! 💥';
@@ -593,11 +609,10 @@
         if (index % 2 === 0) {
           foods.push(generateFood(pt.x + (Math.random() - 0.5) * 30, pt.y + (Math.random() - 0.5) * 30));
         }
-        createExplosion(pt.x, pt.y, snake.color, 2);
+        createExplosion(pt.x, pt.y, snake.skin.colors[0], 2);
       });
     }
 
-    // دالة سريعة جدا لحساب المسافة المربعة للتخلص من ثقل Math.hypot
     function distSq(x1, y1, x2, y2) {
       const dx = x1 - x2;
       const dy = y1 - y2;
@@ -658,12 +673,11 @@
         playerSnake.body.unshift(head);
         while (playerSnake.body.length > playerSnake.length) playerSnake.body.pop();
 
-        // أكل الطعام للاعب (محسّن بسرعات عالية)
         for (let i = foods.length - 1; i >= 0; i--) {
           const food = foods[i];
           let dSq = distSq(head.x, head.y, food.x, food.y);
 
-          if (playerSnake.buffs.magnet > 0 && dSq < 62500) { // 250^2
+          if (playerSnake.buffs.magnet > 0 && dSq < 62500) {
             food.x += (head.x - food.x) * 0.1;
             food.y += (head.y - food.y) * 0.1;
           }
@@ -678,7 +692,6 @@
           }
         }
 
-        // أكل القدرات للاعب
         for (let i = powerups.length - 1; i >= 0; i--) {
           const p = powerups[i];
           const hitRadius = playerSnake.radius + p.radius;
@@ -692,7 +705,7 @@
         }
       }
 
-      // ذكاء اصطناعي خفيف ومحسّن للبوتات
+      // ذكاء البوتات المطور
       aliveBots.forEach((bot) => {
         let botHead = { ...bot.body[0] };
 
@@ -706,7 +719,7 @@
           bot.changeDirTimer--;
           if (bot.changeDirTimer <= 0) {
             let closestTarget = null;
-            let minDSq = 122500; // 350^2
+            let minDSq = 122500;
 
             foods.forEach(f => {
               let dSq = distSq(botHead.x, botHead.y, f.x, f.y);
@@ -743,7 +756,6 @@
           }
         }
 
-        // تصادامات محسنة أسرع 10 مرات بدون حسابات معقدة
         if (playerSnake.isAlive) {
           const hitRadius = (bot.radius + playerSnake.radius * 0.7);
           const hitR2 = hitRadius * hitRadius;
@@ -845,26 +857,35 @@
         ctx.stroke();
       }
 
-      ctx.fillStyle = snake.color;
+      // رسم الجسم الكامل بأنماط الألوان المتدرجة والمتعددة للميزات الجديدة
       for (let i = snake.body.length - 1; i >= 1; i--) {
         const pt = snake.body[i];
+        const colorIndex = i % snake.skin.colors.length;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, snake.radius, 0, Math.PI * 2);
+        ctx.fillStyle = snake.skin.colors[colorIndex];
         ctx.fill();
       }
 
+      // رسم اسم اللاعب فوق الثعبان مباشرة
       const head = snake.body[0];
       const next = snake.body[1] || head;
       const angle = Math.atan2(head.y - next.y, head.x - next.x);
 
       ctx.save();
       ctx.translate(head.x, head.y);
-      ctx.rotate(angle + Math.PI / 2);
+      
+      // اسم اللاعب فوق الرأس
+      ctx.font = 'bold 12px Segoe UI';
+      ctx.fillStyle = isPlayer ? '#38bdf8' : '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.fillText(snake.name, 0, -snake.radius - 8);
 
+      ctx.rotate(angle + Math.PI / 2);
       ctx.font = `${snake.radius * 2.2}px Segoe UI Emoji, Apple Color Emoji`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(snake.emoji, 0, 0);
+      ctx.fillText(snake.skin.emoji, 0, 0);
 
       ctx.restore();
     }
@@ -887,7 +908,6 @@
     }
 
     function draw() {
-      // تنظيف الخلفية بسرعة لعدم البطء
       ctx.fillStyle = '#030712';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -927,7 +947,7 @@
       ctx.lineWidth = 10;
       ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
-      // رسم الطعام الظاهر على الشاشة فقط (Spatial Culling)
+      // رسم الطعام
       foods.forEach(food => {
         if (Math.abs(food.x - head.x) < viewWidth && Math.abs(food.y - head.y) < viewHeight) {
           food.pulse += 0.05;
