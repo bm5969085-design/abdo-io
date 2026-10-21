@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>عبده.io - النسخة الأسطورية المحدثة 👑</title>
+  <title>عبده.io - النسخة العالمية الشاملة 👑</title>
   <style>
     * {
       box-sizing: border-box;
@@ -25,7 +25,7 @@
       cursor: crosshair;
     }
     
-    /* واجهة المستخدم UI */
+    /* واجهة المستخدم HUD */
     .hud-panel {
       position: absolute;
       color: #fff;
@@ -44,7 +44,7 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      min-width: 160px;
+      min-width: 170px;
     }
 
     .stat-row {
@@ -238,27 +238,36 @@
       display: none !important;
     }
 
-    #mobileBoostBtn {
+    /* أزرار التحكم بالموبايل */
+    .mobile-controls {
       position: absolute;
       bottom: 25px;
       right: 25px;
-      width: 75px;
-      height: 75px;
-      border-radius: 50%;
-      background: radial-gradient(circle, #f59e0b, #d97706);
-      color: white;
-      font-size: 26px;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      gap: 15px;
       z-index: 8;
-      touch-action: manipulation;
-      border: 3px solid rgba(255,255,255,0.4);
       display: none;
     }
 
+    .ctrl-btn {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      color: white;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      border: 3px solid rgba(255,255,255,0.4);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+
+    #mobileBoostBtn { background: radial-gradient(circle, #f59e0b, #d97706); }
+    #mobileGhostBtn { background: radial-gradient(circle, #a855f7, #7e22ce); }
+
     @media (max-width: 768px) {
-      #mobileBoostBtn { display: flex; }
+      .mobile-controls { display: flex; }
     }
   </style>
 </head>
@@ -293,8 +302,8 @@
   </div>
 
   <div id="startScreen" class="overlay">
-    <h1>عبده.io - باتل رويال 👑</h1>
-    <p>اختر اسمك، تَمَيَّز بمظهرك الكامل، واغزو الساحة!</p>
+    <h1>عبده.io - النسخة العالمية 👑</h1>
+    <p>اختر اسمك، تَمَيَّز بمظهرك الكامل، واستخدم مهارة الاختفاء!</p>
     
     <div class="input-group">
       <input type="text" id="playerNameInput" value="عبد الله الأسطوري" maxlength="15" placeholder="اكتب اسمك هنا...">
@@ -313,7 +322,10 @@
     <button class="btn" onclick="startGame()">العب مرة أخرى 🔄</button>
   </div>
 
-  <div id="mobileBoostBtn">⚡</div>
+  <div class="mobile-controls">
+    <div id="mobileGhostBtn" class="ctrl-btn">👻</div>
+    <div id="mobileBoostBtn" class="ctrl-btn">⚡</div>
+  </div>
 
   <canvas id="gameCanvas"></canvas>
 
@@ -362,6 +374,13 @@
           gain.gain.setValueAtTime(0.3, now);
           gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
           osc.start(now); osc.stop(now + 0.5);
+        } else if (type === 'ghost') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.3);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now); osc.stop(now + 0.3);
         }
       } catch (e) {}
     }
@@ -405,6 +424,8 @@
 
     let selectedSkinIndex = 0;
     let isBoosting = false;
+    let isGhostActive = false;
+    let ghostCooldown = 0;
     let isPlaying = false;
 
     let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
@@ -413,6 +434,7 @@
     const TOTAL_BOTS = 24;
 
     let particles = [];
+    let floatingTexts = [];
     let foods = [];
     let powerups = [];
     let botSnakes = [];
@@ -427,7 +449,7 @@
       skin: FULL_SKINS[0],
       boostEnergy: 100,
       kills: 0,
-      buffs: { magnet: 0, shield: 0, double: 0 }
+      buffs: { magnet: 0, shield: 0, double: 0, ghost: 0 }
     };
 
     function renderSkins() {
@@ -446,12 +468,30 @@
     }
     renderSkins();
 
+    // عناصر التحكم باللوحة والمفاتيح
     window.addEventListener('mousedown', () => isBoosting = true);
     window.addEventListener('mouseup', () => isBoosting = false);
     
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        activateGhostSkill();
+      }
+    });
+
     const boostBtn = document.getElementById('mobileBoostBtn');
     boostBtn.addEventListener('touchstart', (e) => { e.preventDefault(); isBoosting = true; });
     boostBtn.addEventListener('touchend', (e) => { e.preventDefault(); isBoosting = false; });
+
+    const ghostBtn = document.getElementById('mobileGhostBtn');
+    ghostBtn.addEventListener('touchstart', (e) => { e.preventDefault(); activateGhostSkill(); });
+
+    function activateGhostSkill() {
+      if (!isPlaying || !playerSnake.isAlive || ghostCooldown > 0) return;
+      playSound('ghost');
+      playerSnake.buffs.ghost = 250; // مدة الاختفاء (~4 ثواني)
+      ghostCooldown = 600; // وقت الانتظار للاستخدام مرة أخرى (~10 ثواني)
+      addFloatingText('👻 مهارة الاختفاء مفعلة!', playerSnake.body[0].x, playerSnake.body[0].y, '#a855f7');
+    }
 
     window.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
@@ -527,6 +567,10 @@
       }
     }
 
+    function addFloatingText(text, x, y, color = '#38bdf8') {
+      floatingTexts.push({ text, x, y, alpha: 1, color });
+    }
+
     function initGame() {
       initAudio();
       const customName = document.getElementById('playerNameInput').value.trim();
@@ -542,7 +586,8 @@
       playerSnake.radius = 14;
       playerSnake.boostEnergy = 100;
       playerSnake.kills = 0;
-      playerSnake.buffs = { magnet: 0, shield: 0, double: 0 };
+      playerSnake.buffs = { magnet: 0, shield: 0, double: 0, ghost: 0 };
+      ghostCooldown = 0;
 
       for (let i = 0; i < playerSnake.length; i++) {
         playerSnake.body.push({ x: startX, y: startY + i * 5 });
@@ -558,6 +603,7 @@
       for (let i = 0; i < TOTAL_BOTS; i++) botSnakes.push(generateBotSnake(i + 1));
 
       particles = [];
+      floatingTexts = [];
     }
 
     function startGame() {
@@ -597,6 +643,9 @@
       snake.isAlive = false;
       if (killer) {
         killer.kills = (killer.kills || 0) + 1;
+        if (killer.id === 'player') {
+          addFloatingText(`🔥 قتلت ${snake.name}!`, snake.body[0].x, snake.body[0].y, '#ef4444');
+        }
       }
       snake.body.forEach((pt, index) => {
         if (index % 2 === 0) {
@@ -627,6 +676,8 @@
       if (playerSnake.buffs.magnet > 0) playerSnake.buffs.magnet--;
       if (playerSnake.buffs.shield > 0) playerSnake.buffs.shield--;
       if (playerSnake.buffs.double > 0) playerSnake.buffs.double--;
+      if (playerSnake.buffs.ghost > 0) playerSnake.buffs.ghost--;
+      if (ghostCooldown > 0) ghostCooldown--;
 
       let activeBoost = isBoosting && playerSnake.boostEnergy > 5;
       let speed = activeBoost ? 4.0 : 2.3;
@@ -691,6 +742,7 @@
           if (distSq(head.x, head.y, p.x, p.y) < hitRadius * hitRadius) {
             playSound('powerup');
             playerSnake.buffs[p.type] = 350;
+            addFloatingText(`+ ${p.icon} قوة جديدة!`, p.x, p.y, p.color);
             createExplosion(p.x, p.y, p.color, 8);
             powerups.splice(i, 1);
             setTimeout(() => powerups.push(generatePowerup()), 10000);
@@ -698,7 +750,7 @@
         }
       }
 
-      // ذكاء البوتات
+      // ذكاء البوتات المطور
       aliveBots.forEach((bot) => {
         let botHead = { ...bot.body[0] };
 
@@ -749,7 +801,7 @@
           }
         }
 
-        if (playerSnake.isAlive) {
+        if (playerSnake.isAlive && playerSnake.buffs.ghost <= 0) {
           const hitRadius = (bot.radius + playerSnake.radius * 0.7);
           const hitR2 = hitRadius * hitRadius;
 
@@ -762,7 +814,7 @@
           }
         }
 
-        if (playerSnake.isAlive && bot.isAlive) {
+        if (playerSnake.isAlive && bot.isAlive && playerSnake.buffs.ghost <= 0) {
           const head = playerSnake.body[0];
           const hitRadius = (playerSnake.radius + bot.radius * 0.7);
           const hitR2 = hitRadius * hitRadius;
@@ -795,11 +847,19 @@
         });
       });
 
+      // تحديث الجسيمات والنصوص العائمة
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx; p.y += p.vy;
         p.alpha -= 0.03;
         if (p.alpha <= 0) particles.splice(i, 1);
+      }
+
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= 0.8;
+        ft.alpha -= 0.02;
+        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
       }
 
       document.getElementById('score').innerText = Math.floor(playerSnake.length);
@@ -810,12 +870,14 @@
       if (playerSnake.buffs.magnet > 0) buffsText.push('🧲 مغناطيس');
       if (playerSnake.buffs.shield > 0) buffsText.push('🛡️ درع حماية');
       if (playerSnake.buffs.double > 0) buffsText.push('⚡ x2');
+      if (playerSnake.buffs.ghost > 0) buffsText.push('👻 اختفاء');
+      if (ghostCooldown > 0) buffsText.push(`⏳ الشبح (${Math.ceil(ghostCooldown/60)}ث)`);
       document.getElementById('activeBuffs').innerText = buffsText.join(' | ');
 
       updateLeaderboard();
     }
 
-    // --- قاعدة ترتيب المتصدرين مع كسر التعادل (الطول ثم عدد القتلات) ---
+    // --- قاعدة ترتيب المتصدرين مع كسر التعادل ---
     function updateLeaderboard() {
       let allSnakes = [];
       if (playerSnake.isAlive) allSnakes.push({ id: playerSnake.id, name: playerSnake.name, length: Math.floor(playerSnake.length), kills: playerSnake.kills || 0 });
@@ -825,10 +887,8 @@
       });
 
       allSnakes.sort((a, b) => {
-        if (b.length !== a.length) {
-          return b.length - a.length; // 1. الترتيب الأساسي بالطول
-        }
-        return b.kills - a.kills; // 2. فسر التعادل بعدد القتلات لو تساوو في النقاط
+        if (b.length !== a.length) return b.length - a.length;
+        return (b.kills || 0) - (a.kills || 0);
       });
 
       const lbList = document.getElementById('lb-list');
@@ -842,9 +902,14 @@
       });
     }
 
-    // --- رسم الثعبان مع المسار المتصل لمنع أي انفصال بين الأجزاء ---
+    // --- رسم الثعبان مع المسار المتصل وتأثير الشبح ---
     function drawSnake(ctx, snake, isKing = false) {
       if (!snake.isAlive || !snake.body || snake.body.length === 0) return;
+
+      ctx.save();
+      if (snake.id === 'player' && playerSnake.buffs.ghost > 0) {
+        ctx.globalAlpha = 0.45; // تأثير الشفافية عند تفعيل الاختفاء
+      }
 
       if (snake.id === 'player' && playerSnake.buffs.shield > 0) {
         const head = snake.body[0];
@@ -857,7 +922,6 @@
         ctx.stroke();
       }
 
-      // رسم مسار الجسم المتصل بالكامل لضمان عدم وجود فراغات
       if (snake.body.length > 1) {
         ctx.beginPath();
         ctx.moveTo(snake.body[0].x, snake.body[0].y);
@@ -871,7 +935,6 @@
         ctx.stroke();
       }
 
-      // رسم الدوائر فوق المسار
       for (let i = snake.body.length - 1; i >= 1; i--) {
         const pt = snake.body[i];
         const colorIndex = i % snake.skin.colors.length;
@@ -905,6 +968,7 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(snake.skin.emoji, 0, 0);
 
+      ctx.restore();
       ctx.restore();
     }
 
@@ -1004,6 +1068,16 @@
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
         ctx.fill();
+        ctx.restore();
+      });
+
+      floatingTexts.forEach(ft => {
+        ctx.save();
+        ctx.globalAlpha = ft.alpha;
+        ctx.font = 'bold 15px Segoe UI';
+        ctx.fillStyle = ft.color;
+        ctx.textAlign = 'center';
+        ctx.fillText(ft.text, ft.x, ft.y);
         ctx.restore();
       });
 
